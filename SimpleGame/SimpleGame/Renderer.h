@@ -4,6 +4,7 @@
 #include <cstdlib>
 #include <fstream>
 #include <iostream>
+#include <chrono>
 
 #include "Dependencies\glew.h"
 
@@ -37,5 +38,8 @@ private:
 	GLuint m_SolidRectShader = 0;
 
 	GLuint m_testVBO{ 0 };
+	GLuint m_testVBO2{ 0 };
+
+	float m_scale{ 0.f };
 };
 

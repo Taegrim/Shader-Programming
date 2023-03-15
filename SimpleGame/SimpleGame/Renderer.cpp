@@ -190,9 +190,23 @@ void Renderer::Render()
 	glUniform4f(glGetUniformLocation(m_SolidRectShader, "u_Trans"), 0.f, 0.f, 0.f, 1.f);
 	glUniform4f(glGetUniformLocation(m_SolidRectShader, "u_Color"), 1.f, 1.f, 1.f, 1.f);
 
-	glEnableVertexAttribArray(0);
+	int attribLocation = glGetAttribLocation(m_SolidRectShader, "a_Position");
+	glEnableVertexAttribArray(attribLocation);
 	glBindBuffer(GL_ARRAY_BUFFER, m_testVBO);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
+	glVertexAttribPointer(attribLocation, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
+
+	attribLocation = glGetAttribLocation(m_SolidRectShader, "a_Position2");
+	glEnableVertexAttribArray(attribLocation);
+	glBindBuffer(GL_ARRAY_BUFFER, m_testVBO2);
+	glVertexAttribPointer(attribLocation, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
+
+	int uniformLocation = glGetUniformLocation(m_SolidRectShader, "u_Scale");
+
+	m_scale += 0.016f;
+	if (m_scale >= 1.f)
+		m_scale = 0.f;
+
+	glUniform1f(uniformLocation, m_scale);
 
 	glDrawArrays(GL_TRIANGLES, 0, 3);
 }
@@ -211,4 +225,10 @@ void Renderer::CreateVBO()
 	glBindBuffer(GL_ARRAY_BUFFER, m_testVBO);	// VBO 를 ARRAY_BUFFER 에 Bind 함
 	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW); // CPU의 데이터를 GPU 에 전달
 
+	
+	float vertices2[] = { -1.f, -1.f, 0.f, 0.f, -1.f, 0.f, 0.f, 0.f, 0.f };
+
+	glGenBuffers(1, &m_testVBO2);
+	glBindBuffer(GL_ARRAY_BUFFER, m_testVBO2);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices2), vertices2, GL_STATIC_DRAW);
 }
