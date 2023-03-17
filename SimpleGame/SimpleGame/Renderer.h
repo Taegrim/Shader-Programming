@@ -18,6 +18,8 @@ public:
 	void DrawSolidRect(float x, float y, float z, float size, float r, float g, float b, float a);
 
 	void Render();
+	void Update(float elapsed_time);
+	void DrawParticleEffect();
 
 private:
 	void Initialize(int windowSizeX, int windowSizeY);
@@ -28,6 +30,7 @@ private:
 	void GetGLPosition(float x, float y, float *newX, float *newY);
 
 	void CreateVBO();
+	void CreateParticles();
 
 	bool m_Initialized = false;
 	
@@ -39,7 +42,13 @@ private:
 
 	GLuint m_testVBO{ 0 };
 	GLuint m_testVBO2{ 0 };
+	GLuint m_colorVBO{ 0 };
 
 	float m_scale{ 0.f };
+
+	GLuint m_particleShader;
+	GLuint m_particleVBO;
+	GLuint m_particleVerticesCount;
+
 };
 

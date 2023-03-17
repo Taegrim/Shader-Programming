@@ -1,5 +1,6 @@
 #include "stdafx.h"
 #include "Renderer.h"
+#include <random>
 
 Renderer::Renderer(int windowSizeX, int windowSizeY)
 {
@@ -20,9 +21,11 @@ void Renderer::Initialize(int windowSizeX, int windowSizeY)
 
 	//Load shaders
 	m_SolidRectShader = CompileShaders("./Shaders/SolidRect.vs", "./Shaders/SolidRect.fs");
+	m_particleShader = CompileShaders("./Shaders/Particle.vs", "./Shaders/Particle.fs");
 	
 	//Create VBOs
 	CreateVertexBufferObjects();
+	CreateParticles();
 
 	if (m_SolidRectShader > 0 && m_VBORect > 0)
 	{
@@ -185,30 +188,57 @@ void Renderer::DrawSolidRect(float x, float y, float z, float size, float r, flo
 
 void Renderer::Render()
 {
-	glUseProgram(m_SolidRectShader);
+	int shader_program = m_particleShader;
+	glUseProgram(shader_program);
 
-	glUniform4f(glGetUniformLocation(m_SolidRectShader, "u_Trans"), 0.f, 0.f, 0.f, 1.f);
-	glUniform4f(glGetUniformLocation(m_SolidRectShader, "u_Color"), 1.f, 1.f, 1.f, 1.f);
+	glUniform4f(glGetUniformLocation(shader_program, "u_Trans"), 0.f, 0.f, 0.f, 1.f);
+	glUniform4f(glGetUniformLocation(shader_program, "u_Color"), 1.f, 1.f, 1.f, 1.f);
 
-	int attribLocation = glGetAttribLocation(m_SolidRectShader, "a_Position");
+	int attribLocation = glGetAttribLocation(shader_program, "a_Position");
 	glEnableVertexAttribArray(attribLocation);
 	glBindBuffer(GL_ARRAY_BUFFER, m_testVBO);
 	glVertexAttribPointer(attribLocation, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
 
-	attribLocation = glGetAttribLocation(m_SolidRectShader, "a_Position2");
+	attribLocation = glGetAttribLocation(shader_program, "a_Position2");
 	glEnableVertexAttribArray(attribLocation);
 	glBindBuffer(GL_ARRAY_BUFFER, m_testVBO2);
 	glVertexAttribPointer(attribLocation, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
 
-	int uniformLocation = glGetUniformLocation(m_SolidRectShader, "u_Scale");
+	attribLocation = glGetAttribLocation(shader_program, "a_Color");
+	glEnableVertexAttribArray(attribLocation);
+	glBindBuffer(GL_ARRAY_BUFFER, m_colorVBO);
+	glVertexAttribPointer(attribLocation, 4, GL_FLOAT, GL_FALSE, 0, nullptr);
 
-	m_scale += 0.016f;
-	if (m_scale >= 1.f)
-		m_scale = 0.f;
+
+	int uniformLocation = glGetUniformLocation(m_SolidRectShader, "u_Scale");
 
 	glUniform1f(uniformLocation, m_scale);
 
 	glDrawArrays(GL_TRIANGLES, 0, 3);
+}
+
+void Renderer::Update(float elapsed_time)
+{
+	m_scale += 0.01f;
+	if (m_scale >= 1.f)
+		m_scale = 0.f;
+}
+
+void Renderer::DrawParticleEffect()
+{
+	int shader_program = m_particleShader;
+	glUseProgram(shader_program);
+
+	int attribLocation = glGetAttribLocation(shader_program, "a_Position");
+	glEnableVertexAttribArray(attribLocation);
+	glBindBuffer(GL_ARRAY_BUFFER, m_particleVBO);
+	glVertexAttribPointer(attribLocation, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
+
+	int uniformLocation = glGetUniformLocation(shader_program, "u_Scale");
+
+	glUniform1f(uniformLocation, m_scale);
+
+	glDrawArrays(GL_TRIANGLES, 0, m_particleVerticesCount);
 }
 
 void Renderer::GetGLPosition(float x, float y, float *newX, float *newY)
@@ -219,16 +249,65 @@ void Renderer::GetGLPosition(float x, float y, float *newX, float *newY)
 
 void Renderer::CreateVBO()
 {
-	float vertices[] = { 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f };
+	float vertices[] = { 0.f, 0.f, 0.f,
+					1.f, 0.f, 0.f,
+					1.f, 1.f, 0.f };
 
 	glGenBuffers(1, &m_testVBO);
 	glBindBuffer(GL_ARRAY_BUFFER, m_testVBO);	// VBO 를 ARRAY_BUFFER 에 Bind 함
 	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW); // CPU의 데이터를 GPU 에 전달
 
 	
-	float vertices2[] = { -1.f, -1.f, 0.f, 0.f, -1.f, 0.f, 0.f, 0.f, 0.f };
+	float vertices2[] = { -1.f, -1.f, 0.f,
+					0.f, -1.f, 0.f,
+					0.f, 0.f, 0.f };
 
 	glGenBuffers(1, &m_testVBO2);
 	glBindBuffer(GL_ARRAY_BUFFER, m_testVBO2);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices2), vertices2, GL_STATIC_DRAW);
+
+	float color[] = { 1.f, 0.f, 0.f, 1.f,
+					0.f, 1.f, 0.f, 1.f,
+					0.f, 0.f, 1.f, 1.f };
+
+	glGenBuffers(1, &m_colorVBO);
+	glBindBuffer(GL_ARRAY_BUFFER, m_colorVBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(color), color, GL_STATIC_DRAW);
+}
+
+void Renderer::CreateParticles()
+{
+	float centerX{}, centerY{};
+	float size{ 0.5f };
+
+	constexpr int MAX_PARTICLE = 1;
+	constexpr int MAX_FLOAT = MAX_PARTICLE * 6 * 3;
+	m_particleVerticesCount = MAX_PARTICLE * 6;
+
+	float* vertices = new float[MAX_FLOAT];
+
+	int index{ 0 };
+	vertices[index++] = centerX - size;
+	vertices[index++] = centerY + size;
+	vertices[index++] = 0.f;
+	vertices[index++] = centerX - size;
+	vertices[index++] = centerY - size;
+	vertices[index++] = 0.f;
+	vertices[index++] = centerX + size;
+	vertices[index++] = centerY + size;
+	vertices[index++] = 0.f;
+
+	vertices[index++] = centerX + size;
+	vertices[index++] = centerY + size;
+	vertices[index++] = 0.f;
+	vertices[index++] = centerX - size;
+	vertices[index++] = centerY - size;
+	vertices[index++] = 0.f;
+	vertices[index++] = centerX + size;
+	vertices[index++] = centerY - size;
+	vertices[index++] = 0.f;
+
+	glGenBuffers(1, &m_particleVBO);
+	glBindBuffer(GL_ARRAY_BUFFER, m_particleVBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * MAX_FLOAT, vertices, GL_STATIC_DRAW);
 }
