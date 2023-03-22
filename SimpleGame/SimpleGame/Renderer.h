@@ -30,7 +30,7 @@ private:
 	void GetGLPosition(float x, float y, float *newX, float *newY);
 
 	void CreateVBO();
-	void CreateParticles();
+	void CreateParticles(int num);
 
 	bool m_Initialized = false;
 	
@@ -50,5 +50,8 @@ private:
 	GLuint m_particleVBO;
 	GLuint m_particleVerticesCount;
 
+	GLuint m_velocityVBO;
+
+	float m_time{};
 };
 

@@ -27,17 +27,17 @@ void RenderScene(void)
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 
-	time_point<system_clock> now = system_clock::now(); 
+	auto now = system_clock::now(); 
 	auto exec = duration_cast<std::chrono::duration<double>>(now - g_last_time);
 
-	//if (elapsed_time >= frame_time) {
+	if (exec >= frame_time) {
 		// Renderer Test
 		//g_Renderer->DrawSolidRect(0, 0, 0, 4, 1, 0, 1, 1);
 		g_Renderer->Update(exec.count());
-		g_Renderer->DrawParticleEffect();
 		
 		g_last_time = now;
-	//}
+	}
+	g_Renderer->DrawParticleEffect();
 
 	glutSwapBuffers();
 }
@@ -71,7 +71,7 @@ int main(int argc, char **argv)
 	glutInitWindowSize(500, 500);
 	glutCreateWindow("Game Software Engineering KPU");
 
-	g_elapsed_time = std::chrono::system_clock::now();
+	g_last_time = std::chrono::system_clock::now();
 
 	glewInit();
 	if (glewIsSupported("GL_VERSION_3_0"))
