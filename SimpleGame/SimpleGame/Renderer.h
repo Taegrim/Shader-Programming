@@ -51,6 +51,8 @@ private:
 	GLuint m_particleVerticesCount;
 
 	GLuint m_velocityVBO;
+	GLuint m_emitTimeVBO;
+	GLuint m_lifeTimeVBO;
 
 	float m_time{};
 };
