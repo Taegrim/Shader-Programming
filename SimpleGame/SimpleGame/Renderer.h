@@ -53,6 +53,9 @@ private:
 	GLuint m_velocityVBO;
 	GLuint m_emitTimeVBO;
 	GLuint m_lifeTimeVBO;
+	GLuint m_ampVBO;
+	GLuint m_periodVBO;
+	GLuint m_valueVBO;
 
 	float m_time{};
 };

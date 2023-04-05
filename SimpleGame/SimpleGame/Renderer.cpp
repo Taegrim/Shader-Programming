@@ -2,10 +2,9 @@
 #include "Renderer.h"
 #include <random>
 
-constexpr int PARTICLE_NUM = 1;
+constexpr int PARTICLE_NUM = 10000;
 constexpr float PARTICLE_SIZE = 0.01f;
 constexpr float PARTICLE_MAX_SPEED = 0.5f;
-constexpr float PARTICLE_DRAW_END = 10.f;
 
 std::random_device rd;
 std::default_random_engine dre(rd());
@@ -13,6 +12,9 @@ std::uniform_real_distribution<float> random_emit_time(0.f, 5.f);
 std::uniform_real_distribution<float> random_life_time(2.f, 3.5f);
 std::uniform_real_distribution<float> random_velocity_x(-PARTICLE_MAX_SPEED, PARTICLE_MAX_SPEED);
 std::uniform_real_distribution<float> random_velocity_y(PARTICLE_MAX_SPEED, PARTICLE_MAX_SPEED + 0.5f);
+std::uniform_real_distribution<float> random_amp(-1.f, 1.f);
+std::uniform_real_distribution<float> random_period(1.f, 2.f);
+std::uniform_real_distribution<float> random_angle(0, 1.f);
 
 Renderer::Renderer(int windowSizeX, int windowSizeY)
 {
@@ -242,12 +244,12 @@ void Renderer::DrawParticleEffect()
 	int shader_program = m_particleShader;
 	glUseProgram(shader_program);
 
-	int attribLocation = glGetAttribLocation(shader_program, "a_Position");
+	int attribLocation = glGetAttribLocation(shader_program, "a_position");
 	glEnableVertexAttribArray(attribLocation);
 	glBindBuffer(GL_ARRAY_BUFFER, m_particleVBO);
 	glVertexAttribPointer(attribLocation, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
 
-	attribLocation = glGetAttribLocation(shader_program, "a_Velocity");
+	attribLocation = glGetAttribLocation(shader_program, "a_velocity");
 	glEnableVertexAttribArray(attribLocation);
 	glBindBuffer(GL_ARRAY_BUFFER, m_velocityVBO);
 	glVertexAttribPointer(attribLocation, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
@@ -262,7 +264,22 @@ void Renderer::DrawParticleEffect()
 	glBindBuffer(GL_ARRAY_BUFFER, m_lifeTimeVBO);
 	glVertexAttribPointer(attribLocation, 1, GL_FLOAT, GL_FALSE, 0, nullptr);
 
-	int uniformLocation = glGetUniformLocation(shader_program, "u_Time");
+	attribLocation = glGetAttribLocation(shader_program, "a_period");
+	glEnableVertexAttribArray(attribLocation);
+	glBindBuffer(GL_ARRAY_BUFFER, m_periodVBO);
+	glVertexAttribPointer(attribLocation, 1, GL_FLOAT, GL_FALSE, 0, nullptr);
+
+	attribLocation = glGetAttribLocation(shader_program, "a_amp");
+	glEnableVertexAttribArray(attribLocation);
+	glBindBuffer(GL_ARRAY_BUFFER, m_ampVBO);
+	glVertexAttribPointer(attribLocation, 1, GL_FLOAT, GL_FALSE, 0, nullptr);
+
+	attribLocation = glGetAttribLocation(shader_program, "a_value");
+	glEnableVertexAttribArray(attribLocation);
+	glBindBuffer(GL_ARRAY_BUFFER, m_valueVBO);
+	glVertexAttribPointer(attribLocation, 1, GL_FLOAT, GL_FALSE, 0, nullptr);
+
+	int uniformLocation = glGetUniformLocation(shader_program, "u_time");
 
 	glUniform1f(uniformLocation, m_time);
 
@@ -416,4 +433,70 @@ void Renderer::CreateParticles(int num)
 	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * m_particleVerticesCount, times, GL_STATIC_DRAW);
 
 	delete[] times;
+
+	
+	float* periods = new float[m_particleVerticesCount];
+
+	float period{};
+	for (int i = 0; i < m_particleVerticesCount;) {
+		period = random_period(dre);
+
+		periods[i++] = period;
+		periods[i++] = period;
+		periods[i++] = period;
+
+		periods[i++] = period;
+		periods[i++] = period;
+		periods[i++] = period;
+	}
+
+	glGenBuffers(1, &m_periodVBO);
+	glBindBuffer(GL_ARRAY_BUFFER, m_periodVBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * m_particleVerticesCount, periods, GL_STATIC_DRAW);
+
+	delete[] periods;
+
+
+	float* amps = new float[m_particleVerticesCount];
+
+	float amp{};
+	for (int i = 0; i < m_particleVerticesCount;) {
+		amp = random_amp(dre);
+
+		amps[i++] = amp;
+		amps[i++] = amp;
+		amps[i++] = amp;
+
+		amps[i++] = amp;
+		amps[i++] = amp;
+		amps[i++] = amp;
+	}
+
+	glGenBuffers(1, &m_ampVBO);
+	glBindBuffer(GL_ARRAY_BUFFER, m_ampVBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * m_particleVerticesCount, amps, GL_STATIC_DRAW);
+	
+	delete[] amps;
+
+
+	float* values = new float[m_particleVerticesCount];
+
+	float value{};
+	for (int i = 0; i < m_particleVerticesCount;) {
+		value = random_angle(dre);
+
+		values[i++] = value;
+		values[i++] = value;
+		values[i++] = value;
+			 		  
+		values[i++] = value;
+		values[i++] = value;
+		values[i++] = value;
+	}
+
+	glGenBuffers(1, &m_valueVBO);
+	glBindBuffer(GL_ARRAY_BUFFER, m_valueVBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * m_particleVerticesCount, values, GL_STATIC_DRAW);
+
+	delete[] values;
 }
