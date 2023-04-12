@@ -15,6 +15,7 @@ std::uniform_real_distribution<float> random_velocity_y(PARTICLE_MAX_SPEED, PART
 std::uniform_real_distribution<float> random_amp(-1.f, 1.f);
 std::uniform_real_distribution<float> random_period(1.f, 2.f);
 std::uniform_real_distribution<float> random_angle(0, 1.f);
+std::uniform_real_distribution<float> random_color(0.f, 1.f);
 
 Renderer::Renderer(int windowSizeX, int windowSizeY)
 {
@@ -244,17 +245,25 @@ void Renderer::DrawParticleEffect()
 	int shader_program = m_particleShader;
 	glUseProgram(shader_program);
 
-	int attribLocation = glGetAttribLocation(shader_program, "a_position");
-	glEnableVertexAttribArray(attribLocation);
-	glBindBuffer(GL_ARRAY_BUFFER, m_particleVBO);
-	glVertexAttribPointer(attribLocation, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
+	int attribLocationPos = glGetAttribLocation(shader_program, "a_position");
+	glEnableVertexAttribArray(attribLocationPos);
 
-	attribLocation = glGetAttribLocation(shader_program, "a_velocity");
-	glEnableVertexAttribArray(attribLocation);
-	glBindBuffer(GL_ARRAY_BUFFER, m_velocityVBO);
-	glVertexAttribPointer(attribLocation, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
+	int attribLocationColor = glGetAttribLocation(shader_program, "a_color");
+	glEnableVertexAttribArray(attribLocationColor);
 
-	attribLocation = glGetAttribLocation(shader_program, "a_emitTime");
+	int attribLocationVel = glGetAttribLocation(shader_program, "a_velocity");
+	glEnableVertexAttribArray(attribLocationVel);
+
+	glBindBuffer(GL_ARRAY_BUFFER, m_uniformVBO);
+	glVertexAttribPointer(attribLocationPos, 3, GL_FLOAT,
+		GL_FALSE, sizeof(float) * m_strideCount, 0);
+	glVertexAttribPointer(attribLocationColor, 4, GL_FLOAT,
+		GL_FALSE, sizeof(float) * m_strideCount, reinterpret_cast<GLvoid*>(sizeof(float) * 3));
+	glVertexAttribPointer(attribLocationVel, 3, GL_FLOAT,
+		GL_FALSE, sizeof(float) * m_strideCount, reinterpret_cast<GLvoid*>(sizeof(float) * 7));
+
+
+	int attribLocation = glGetAttribLocation(shader_program, "a_emitTime");
 	glEnableVertexAttribArray(attribLocation);
 	glBindBuffer(GL_ARRAY_BUFFER, m_emitTimeVBO);
 	glVertexAttribPointer(attribLocation, 1, GL_FLOAT, GL_FALSE, 0, nullptr);
@@ -278,6 +287,8 @@ void Renderer::DrawParticleEffect()
 	glEnableVertexAttribArray(attribLocation);
 	glBindBuffer(GL_ARRAY_BUFFER, m_valueVBO);
 	glVertexAttribPointer(attribLocation, 1, GL_FLOAT, GL_FALSE, 0, nullptr);
+
+
 
 	int uniformLocation = glGetUniformLocation(shader_program, "u_time");
 
@@ -360,11 +371,145 @@ void Renderer::CreateParticles(int num)
 
 	delete[] vertices;
 
+	int MAX_COLORS = m_particleVerticesCount * 4;
+	float* colors = new float[MAX_COLORS];
 
-	float* velocities = new float[MAX_FLOAT];
+	float r{}, g{}, b{};
+	for (int i = 0; i < MAX_COLORS;) {
+		r = random_color(dre);
+		g = random_color(dre);
+		b = random_color(dre);
 
+		colors[i++] = r;
+		colors[i++] = g;
+		colors[i++] = b;
+		colors[i++] = 1.f;
+
+		colors[i++] = r;
+		colors[i++] = g;
+		colors[i++] = b;
+		colors[i++] = 1.f;
+
+		colors[i++] = r;
+		colors[i++] = g;
+		colors[i++] = b;
+		colors[i++] = 1.f;
+
+
+		colors[i++] = r;
+		colors[i++] = g;
+		colors[i++] = b;
+		colors[i++] = 1.f;
+
+		colors[i++] = r;
+		colors[i++] = g;
+		colors[i++] = b;
+		colors[i++] = 1.f;
+
+		colors[i++] = r;
+		colors[i++] = g;
+		colors[i++] = b;
+		colors[i++] = 1.f;
+	}
+
+	glGenBuffers(1, &m_colorVBO);
+	glBindBuffer(GL_ARRAY_BUFFER, m_colorVBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * MAX_COLORS, colors, GL_STATIC_DRAW);
+
+	delete[] colors;
+
+	m_strideCount = (3 + 4 + 3);
+	int MAX_UNIFORM_COUNT = m_particleVerticesCount * m_strideCount;
+	float* uniforms = new float[MAX_UNIFORM_COUNT];
+	
 	float xVelocity{};
 	float yVelocity{};
+
+	for (int i = 0; i < MAX_UNIFORM_COUNT;) {
+		centerX = 0.f;
+		centerY = 0.f;
+		r = random_color(dre);
+		g = random_color(dre);
+		b = random_color(dre);
+		xVelocity = random_velocity_x(dre);
+		yVelocity = random_velocity_y(dre);
+
+		uniforms[i++] = centerX - PARTICLE_SIZE;
+		uniforms[i++] = centerY + PARTICLE_SIZE;
+		uniforms[i++] = 0.f;
+		uniforms[i++] = r;
+		uniforms[i++] = g;
+		uniforms[i++] = b;
+		uniforms[i++] = 1.f;
+		uniforms[i++] = xVelocity;
+		uniforms[i++] = yVelocity;
+		uniforms[i++] = 0.f;
+
+		uniforms[i++] = centerX - PARTICLE_SIZE;
+		uniforms[i++] = centerY - PARTICLE_SIZE;
+		uniforms[i++] = 0.f;
+		uniforms[i++] = r;
+		uniforms[i++] = g;
+		uniforms[i++] = b;
+		uniforms[i++] = 1.f;
+		uniforms[i++] = xVelocity;
+		uniforms[i++] = yVelocity;
+		uniforms[i++] = 0.f;
+
+		uniforms[i++] = centerX + PARTICLE_SIZE;
+		uniforms[i++] = centerY + PARTICLE_SIZE;
+		uniforms[i++] = 0.f;
+		uniforms[i++] = r;
+		uniforms[i++] = g;
+		uniforms[i++] = b;
+		uniforms[i++] = 1.f;
+		uniforms[i++] = xVelocity;
+		uniforms[i++] = yVelocity;
+		uniforms[i++] = 0.f;
+
+
+		uniforms[i++] = centerX + PARTICLE_SIZE;
+		uniforms[i++] = centerY + PARTICLE_SIZE;
+		uniforms[i++] = 0.f;
+		uniforms[i++] = r;
+		uniforms[i++] = g;
+		uniforms[i++] = b;
+		uniforms[i++] = 1.f;
+		uniforms[i++] = xVelocity;
+		uniforms[i++] = yVelocity;
+		uniforms[i++] = 0.f;
+
+		uniforms[i++] = centerX - PARTICLE_SIZE;
+		uniforms[i++] = centerY - PARTICLE_SIZE;
+		uniforms[i++] = 0.f;
+		uniforms[i++] = r;
+		uniforms[i++] = g;
+		uniforms[i++] = b;
+		uniforms[i++] = 1.f;
+		uniforms[i++] = xVelocity;
+		uniforms[i++] = yVelocity;
+		uniforms[i++] = 0.f;
+
+		uniforms[i++] = centerX + PARTICLE_SIZE;
+		uniforms[i++] = centerY - PARTICLE_SIZE;
+		uniforms[i++] = 0.f;
+		uniforms[i++] = r;
+		uniforms[i++] = g;
+		uniforms[i++] = b;
+		uniforms[i++] = 1.f;
+		uniforms[i++] = xVelocity;
+		uniforms[i++] = yVelocity;
+		uniforms[i++] = 0.f;
+	}
+
+	glGenBuffers(1, &m_uniformVBO);
+	glBindBuffer(GL_ARRAY_BUFFER, m_uniformVBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * MAX_UNIFORM_COUNT, uniforms, GL_STATIC_DRAW);
+
+	delete[] uniforms;
+
+
+	float* velocities = new float[MAX_FLOAT];
 
 	for (int i = 0; i < MAX_FLOAT;) {
 		xVelocity = random_velocity_x(dre);

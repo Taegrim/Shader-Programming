@@ -42,7 +42,6 @@ private:
 
 	GLuint m_testVBO{ 0 };
 	GLuint m_testVBO2{ 0 };
-	GLuint m_colorVBO{ 0 };
 
 	float m_scale{ 0.f };
 
@@ -56,7 +55,11 @@ private:
 	GLuint m_ampVBO;
 	GLuint m_periodVBO;
 	GLuint m_valueVBO;
+	GLuint m_colorVBO;
+	GLuint m_uniformVBO;	// position + color
 
 	float m_time{};
+
+	int m_strideCount;
 };
 
