@@ -20,6 +20,7 @@ public:
 	void Render();
 	void Update(float elapsed_time);
 	void DrawParticleEffect();
+	void DrawFragmentSandbox();
 
 private:
 	void Initialize(int windowSizeX, int windowSizeY);
@@ -31,6 +32,7 @@ private:
 
 	void CreateVBO();
 	void CreateParticles(int num);
+	void CreateFragmentSandbox();
 
 	bool m_Initialized = false;
 	
@@ -61,5 +63,9 @@ private:
 	float m_time{};
 
 	int m_strideCount;
+
+	// -----------------------
+	GLuint m_fragmentSandboxShader;
+	GLuint m_fragmentSandboxVBO;
 };
 

@@ -37,7 +37,8 @@ void RenderScene(void)
 		
 		g_last_time = now;
 	}
-	g_Renderer->DrawParticleEffect();
+	//g_Renderer->DrawParticleEffect();
+	g_Renderer->DrawFragmentSandbox();
 
 	glutSwapBuffers();
 }

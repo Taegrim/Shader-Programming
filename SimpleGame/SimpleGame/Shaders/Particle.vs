@@ -3,6 +3,7 @@
 in vec3 a_position;
 in vec3 a_velocity;
 in vec4 a_color;
+in vec2 a_uv;
 in float a_emitTime;
 in float a_lifeTime;
 in float a_period;
@@ -18,8 +19,9 @@ uniform float u_time;
 
 out vec4 v_color;
 //varying vec4 v_color;
+out vec2 v_uv;
 
-vec4 P1()
+void P1()
 {
 	vec4 newPosition = vec4(0,0,0,1);
 
@@ -37,19 +39,21 @@ vec4 P1()
 						+ 0.5 * c_gravity * time * time;
 		newPosition.w = 1;
 	}
-
-	return newPosition;
+	
+	gl_Position =  newPosition;
+	v_color = a_color;
 }
 
-vec4 GraphSin()
+void GraphSin()
 {
 	vec4 newPosition = vec4(0, 0, 0, 1);
+	float newAlpha = a_color.a;
 
 	float time;
 	time = u_time - a_emitTime;
 
 	if(time < 0.f){
-	
+		
 	}
 	else{
 		time = a_lifeTime * fract(time / a_lifeTime);
@@ -63,13 +67,18 @@ vec4 GraphSin()
 		vec2 dir = vec2(-a_velocity.y, a_velocity.x);
 		dir = normalize(dir);
 		newPosition.xy += dir * a_amp * sin(a_period * time * 2.0 * PI) * time;
+		
+		newAlpha = 1.0f - (time / a_lifeTime);
+		newAlpha = pow(newAlpha, 2);
 	}
 
-	return newPosition;
+	gl_Position =  newPosition;
+	v_color = vec4(a_color.rgb, a_color.a * newAlpha);
 }
 
 void main()
 {
-	gl_Position = GraphSin();
-	v_color = a_color;
+	//P1();
+	GraphSin();
+	v_uv = a_uv;
 }

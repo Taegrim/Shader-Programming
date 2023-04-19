@@ -2,7 +2,7 @@
 #include "Renderer.h"
 #include <random>
 
-constexpr int PARTICLE_NUM = 10000;
+constexpr int PARTICLE_NUM = 6000;
 constexpr float PARTICLE_SIZE = 0.01f;
 constexpr float PARTICLE_MAX_SPEED = 0.5f;
 
@@ -12,7 +12,7 @@ std::uniform_real_distribution<float> random_emit_time(0.f, 5.f);
 std::uniform_real_distribution<float> random_life_time(2.f, 3.5f);
 std::uniform_real_distribution<float> random_velocity_x(-PARTICLE_MAX_SPEED, PARTICLE_MAX_SPEED);
 std::uniform_real_distribution<float> random_velocity_y(PARTICLE_MAX_SPEED, PARTICLE_MAX_SPEED + 0.5f);
-std::uniform_real_distribution<float> random_amp(-1.f, 1.f);
+std::uniform_real_distribution<float> random_amp(-0.1f, 0.1f);
 std::uniform_real_distribution<float> random_period(1.f, 2.f);
 std::uniform_real_distribution<float> random_angle(0, 1.f);
 std::uniform_real_distribution<float> random_color(0.f, 1.f);
@@ -34,12 +34,17 @@ void Renderer::Initialize(int windowSizeX, int windowSizeY)
 	m_WindowSizeY = windowSizeY;
 
 	//Load shaders
-	m_SolidRectShader = CompileShaders("./Shaders/SolidRect.vs", "./Shaders/SolidRect.fs");
-	m_particleShader = CompileShaders("./Shaders/Particle.vs", "./Shaders/Particle.fs");
+	m_SolidRectShader = CompileShaders("./Shaders/SolidRect.vs",
+		"./Shaders/SolidRect.fs");
+	m_particleShader = CompileShaders("./Shaders/Particle.vs",
+		"./Shaders/Particle.fs");
+	m_fragmentSandboxShader = CompileShaders("./Shaders/FragmentSandbox.vs",
+		"./Shaders/FragmentSandbox.fs");
 	
 	//Create VBOs
-	CreateVertexBufferObjects();
-	CreateParticles(PARTICLE_NUM);
+	//CreateVertexBufferObjects();
+	//CreateParticles(PARTICLE_NUM);
+	CreateFragmentSandbox();
 
 	if (m_SolidRectShader > 0 && m_VBORect > 0)
 	{
@@ -171,7 +176,7 @@ GLuint Renderer::CompileShaders(char* filenameVS, char* filenameFS)
 	}
 
 	glUseProgram(ShaderProgram);
-	std::cout << filenameVS << ", " << filenameFS << " Shader compiling is done.";
+	std::cout << filenameVS << ", " << filenameFS << " Shader compiling is done.\n";
 
 	return ShaderProgram;
 }
@@ -198,6 +203,40 @@ void Renderer::DrawSolidRect(float x, float y, float z, float size, float r, flo
 	glDisableVertexAttribArray(attribPosition);
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
+void Renderer::DrawFragmentSandbox()
+{
+	GLuint shader = m_fragmentSandboxShader;
+	glUseProgram(shader);
+
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+	int posLocation = glGetAttribLocation(shader, "a_position");
+	int texLocation = glGetAttribLocation(shader, "a_texCoord");
+	glEnableVertexAttribArray(posLocation);
+	glEnableVertexAttribArray(texLocation);
+
+	glBindBuffer(GL_ARRAY_BUFFER, m_fragmentSandboxVBO);
+	glVertexAttribPointer(posLocation, 3, GL_FLOAT, GL_FALSE,
+		sizeof(float) * 5, 0);
+	glVertexAttribPointer(texLocation, 2, GL_FLOAT, GL_FALSE,
+		sizeof(float) * 5, (GLvoid*)(sizeof(float) * 3));
+
+	/*int uniformLocation = glGetUniformLocation(shader, "u_points");
+	glUniform2f(uniformLocation, 0.5f, 0.5f);*/
+
+	float points[] = { 0.5f, 0.5f, 0.9f, 0.9f, 0.1f, 0.1f };
+	int uniformLocation = glGetUniformLocation(shader, "u_points");
+	glUniform2fv(uniformLocation, 3, points);
+
+	uniformLocation = glGetUniformLocation(shader, "u_time");
+	glUniform1f(uniformLocation, m_time);
+
+	glDrawArrays(GL_TRIANGLES, 0, 6);
+
+	glDisable(GL_BLEND);
 }
 
 void Renderer::Render()
@@ -245,6 +284,9 @@ void Renderer::DrawParticleEffect()
 	int shader_program = m_particleShader;
 	glUseProgram(shader_program);
 
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_CONSTANT_ALPHA);
+
 	int attribLocationPos = glGetAttribLocation(shader_program, "a_position");
 	glEnableVertexAttribArray(attribLocationPos);
 
@@ -254,6 +296,9 @@ void Renderer::DrawParticleEffect()
 	int attribLocationVel = glGetAttribLocation(shader_program, "a_velocity");
 	glEnableVertexAttribArray(attribLocationVel);
 
+	int attribLocationUv = glGetAttribLocation(shader_program, "a_uv");
+	glEnableVertexAttribArray(attribLocationUv);
+
 	glBindBuffer(GL_ARRAY_BUFFER, m_uniformVBO);
 	glVertexAttribPointer(attribLocationPos, 3, GL_FLOAT,
 		GL_FALSE, sizeof(float) * m_strideCount, 0);
@@ -261,6 +306,8 @@ void Renderer::DrawParticleEffect()
 		GL_FALSE, sizeof(float) * m_strideCount, reinterpret_cast<GLvoid*>(sizeof(float) * 3));
 	glVertexAttribPointer(attribLocationVel, 3, GL_FLOAT,
 		GL_FALSE, sizeof(float) * m_strideCount, reinterpret_cast<GLvoid*>(sizeof(float) * 7));
+	glVertexAttribPointer(attribLocationUv, 2, GL_FLOAT,
+		GL_FALSE, sizeof(float) * m_strideCount, reinterpret_cast<GLvoid*>(sizeof(float) * 10));
 
 
 	int attribLocation = glGetAttribLocation(shader_program, "a_emitTime");
@@ -295,6 +342,8 @@ void Renderer::DrawParticleEffect()
 	glUniform1f(uniformLocation, m_time);
 
 	glDrawArrays(GL_TRIANGLES, 0, m_particleVerticesCount);
+
+	glDisable(GL_BLEND);
 }
 
 void Renderer::GetGLPosition(float x, float y, float *newX, float *newY)
@@ -374,42 +423,43 @@ void Renderer::CreateParticles(int num)
 	int MAX_COLORS = m_particleVerticesCount * 4;
 	float* colors = new float[MAX_COLORS];
 
-	float r{}, g{}, b{};
+	float r{}, g{}, b{}, a{};
 	for (int i = 0; i < MAX_COLORS;) {
 		r = random_color(dre);
 		g = random_color(dre);
 		b = random_color(dre);
+		a = random_color(dre);
 
 		colors[i++] = r;
 		colors[i++] = g;
 		colors[i++] = b;
-		colors[i++] = 1.f;
+		colors[i++] = a;
 
 		colors[i++] = r;
 		colors[i++] = g;
 		colors[i++] = b;
-		colors[i++] = 1.f;
+		colors[i++] = a;
 
 		colors[i++] = r;
 		colors[i++] = g;
 		colors[i++] = b;
-		colors[i++] = 1.f;
+		colors[i++] = a;
 
 
 		colors[i++] = r;
 		colors[i++] = g;
 		colors[i++] = b;
-		colors[i++] = 1.f;
+		colors[i++] = a;
 
 		colors[i++] = r;
 		colors[i++] = g;
 		colors[i++] = b;
-		colors[i++] = 1.f;
+		colors[i++] = a;
 
 		colors[i++] = r;
 		colors[i++] = g;
 		colors[i++] = b;
-		colors[i++] = 1.f;
+		colors[i++] = a;
 	}
 
 	glGenBuffers(1, &m_colorVBO);
@@ -418,7 +468,7 @@ void Renderer::CreateParticles(int num)
 
 	delete[] colors;
 
-	m_strideCount = (3 + 4 + 3);
+	m_strideCount = (3 + 4 + 3 + 2);
 	int MAX_UNIFORM_COUNT = m_particleVerticesCount * m_strideCount;
 	float* uniforms = new float[MAX_UNIFORM_COUNT];
 	
@@ -431,6 +481,7 @@ void Renderer::CreateParticles(int num)
 		r = random_color(dre);
 		g = random_color(dre);
 		b = random_color(dre);
+		a = random_color(dre);
 		xVelocity = random_velocity_x(dre);
 		yVelocity = random_velocity_y(dre);
 
@@ -444,39 +495,7 @@ void Renderer::CreateParticles(int num)
 		uniforms[i++] = xVelocity;
 		uniforms[i++] = yVelocity;
 		uniforms[i++] = 0.f;
-
-		uniforms[i++] = centerX - PARTICLE_SIZE;
-		uniforms[i++] = centerY - PARTICLE_SIZE;
 		uniforms[i++] = 0.f;
-		uniforms[i++] = r;
-		uniforms[i++] = g;
-		uniforms[i++] = b;
-		uniforms[i++] = 1.f;
-		uniforms[i++] = xVelocity;
-		uniforms[i++] = yVelocity;
-		uniforms[i++] = 0.f;
-
-		uniforms[i++] = centerX + PARTICLE_SIZE;
-		uniforms[i++] = centerY + PARTICLE_SIZE;
-		uniforms[i++] = 0.f;
-		uniforms[i++] = r;
-		uniforms[i++] = g;
-		uniforms[i++] = b;
-		uniforms[i++] = 1.f;
-		uniforms[i++] = xVelocity;
-		uniforms[i++] = yVelocity;
-		uniforms[i++] = 0.f;
-
-
-		uniforms[i++] = centerX + PARTICLE_SIZE;
-		uniforms[i++] = centerY + PARTICLE_SIZE;
-		uniforms[i++] = 0.f;
-		uniforms[i++] = r;
-		uniforms[i++] = g;
-		uniforms[i++] = b;
-		uniforms[i++] = 1.f;
-		uniforms[i++] = xVelocity;
-		uniforms[i++] = yVelocity;
 		uniforms[i++] = 0.f;
 
 		uniforms[i++] = centerX - PARTICLE_SIZE;
@@ -489,6 +508,48 @@ void Renderer::CreateParticles(int num)
 		uniforms[i++] = xVelocity;
 		uniforms[i++] = yVelocity;
 		uniforms[i++] = 0.f;
+		uniforms[i++] = 0.f;
+		uniforms[i++] = 1.f;
+
+		uniforms[i++] = centerX + PARTICLE_SIZE;
+		uniforms[i++] = centerY + PARTICLE_SIZE;
+		uniforms[i++] = 0.f;
+		uniforms[i++] = r;
+		uniforms[i++] = g;
+		uniforms[i++] = b;
+		uniforms[i++] = 1.f;
+		uniforms[i++] = xVelocity;
+		uniforms[i++] = yVelocity;
+		uniforms[i++] = 0.f;
+		uniforms[i++] = 1.f;
+		uniforms[i++] = 0.f;
+
+
+		uniforms[i++] = centerX + PARTICLE_SIZE;
+		uniforms[i++] = centerY + PARTICLE_SIZE;
+		uniforms[i++] = 0.f;
+		uniforms[i++] = r;
+		uniforms[i++] = g;
+		uniforms[i++] = b;
+		uniforms[i++] = 1.f;
+		uniforms[i++] = xVelocity;
+		uniforms[i++] = yVelocity;
+		uniforms[i++] = 0.f;
+		uniforms[i++] = 1.f;
+		uniforms[i++] = 0.f;
+
+		uniforms[i++] = centerX - PARTICLE_SIZE;
+		uniforms[i++] = centerY - PARTICLE_SIZE;
+		uniforms[i++] = 0.f;
+		uniforms[i++] = r;
+		uniforms[i++] = g;
+		uniforms[i++] = b;
+		uniforms[i++] = 1.f;
+		uniforms[i++] = xVelocity;
+		uniforms[i++] = yVelocity;
+		uniforms[i++] = 0.f;
+		uniforms[i++] = 0.f;
+		uniforms[i++] = 1.f;
 
 		uniforms[i++] = centerX + PARTICLE_SIZE;
 		uniforms[i++] = centerY - PARTICLE_SIZE;
@@ -500,6 +561,8 @@ void Renderer::CreateParticles(int num)
 		uniforms[i++] = xVelocity;
 		uniforms[i++] = yVelocity;
 		uniforms[i++] = 0.f;
+		uniforms[i++] = 1.f;
+		uniforms[i++] = 1.f;
 	}
 
 	glGenBuffers(1, &m_uniformVBO);
@@ -644,4 +707,23 @@ void Renderer::CreateParticles(int num)
 	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * m_particleVerticesCount, values, GL_STATIC_DRAW);
 
 	delete[] values;
+}
+
+void Renderer::CreateFragmentSandbox()
+{
+	// position				uv
+	float rect[] =
+	{
+		-1.f, -1.f, 0.f,	 0.f, 1.f,
+		-1.f, 1.f, 0.f,		 0.f, 0.f,
+		1.f, 1.f, 0.f,		 1.f, 0.f,
+		-1.f, -1.f, 0.f,	 0.f, 1.f,
+		1.f, 1.f, 0.f,		 1.f, 0.f,
+		1.f, -1.f, 0.f,		 1.f, 1.f
+	};
+
+	glGenBuffers(1, &m_fragmentSandboxVBO);
+	glBindBuffer(GL_ARRAY_BUFFER, m_fragmentSandboxVBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(rect), rect, GL_STATIC_DRAW);
+
 }
