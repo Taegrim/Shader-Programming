@@ -40,11 +40,17 @@ void Renderer::Initialize(int windowSizeX, int windowSizeY)
 		"./Shaders/Particle.fs");
 	m_fragmentSandboxShader = CompileShaders("./Shaders/FragmentSandbox.vs",
 		"./Shaders/FragmentSandbox.fs");
-	
+	m_alphaClearShader = CompileShaders("./Shaders/AlphaClear.vs",
+		"./Shaders/AlphaClear.fs");
+	m_vertexSandboxShader = CompileShaders("./Shaders/VertexSandbox.vs",
+		"./Shaders/VertexSandbox.fs");
+
 	//Create VBOs
 	//CreateVertexBufferObjects();
-	//CreateParticles(PARTICLE_NUM);
+	CreateParticles(PARTICLE_NUM);
 	CreateFragmentSandbox();
+	CreateAlphaClear();
+	CreateVertexSandbox();
 
 	if (m_SolidRectShader > 0 && m_VBORect > 0)
 	{
@@ -235,8 +241,50 @@ void Renderer::DrawFragmentSandbox()
 	glUniform1f(uniformLocation, m_time);
 
 	glDrawArrays(GL_TRIANGLES, 0, 6);
+}
 
-	glDisable(GL_BLEND);
+void Renderer::DrawAlphaClear()
+{
+	GLuint shader = m_alphaClearShader;
+	glUseProgram(shader);
+
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+	int posLocation = glGetAttribLocation(shader, "a_position");
+	glEnableVertexAttribArray(posLocation);
+
+	glBindBuffer(GL_ARRAY_BUFFER, m_alphaClearVBO);
+	glVertexAttribPointer(posLocation, 3, GL_FLOAT, GL_FALSE, 0, 0);
+
+	glDrawArrays(GL_TRIANGLES, 0, 6);
+}
+
+void Renderer::DrawVertexSandbox()
+{
+	GLuint shader = m_vertexSandboxShader;
+	glUseProgram(shader);
+	
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+	int posLocation = glGetAttribLocation(shader, "a_position");
+	glEnableVertexAttribArray(posLocation);
+
+	glBindBuffer(GL_ARRAY_BUFFER, m_horiLineVBO);
+	glVertexAttribPointer(posLocation, 3, GL_FLOAT, GL_FALSE, 0, 0);
+
+	int uniformLocation = glGetUniformLocation(shader, "u_time");
+	glUniform1f(uniformLocation, m_time);
+
+	glDrawArrays(GL_LINE_STRIP, 0, m_horiLineVertexCount);
+
+
+	glUniform1f(uniformLocation, m_time + 0.3f);
+	glDrawArrays(GL_LINE_STRIP, 0, m_horiLineVertexCount);
+
+	glUniform1f(uniformLocation, m_time + 0.5f);
+	glDrawArrays(GL_LINE_STRIP, 0, m_horiLineVertexCount);
 }
 
 void Renderer::Render()
@@ -276,7 +324,7 @@ void Renderer::Render()
 
 void Renderer::Update(float elapsed_time)
 {
-	m_time += elapsed_time;
+	m_time += elapsed_time * 4;
 }
 
 void Renderer::DrawParticleEffect()
@@ -726,4 +774,41 @@ void Renderer::CreateFragmentSandbox()
 	glBindBuffer(GL_ARRAY_BUFFER, m_fragmentSandboxVBO);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(rect), rect, GL_STATIC_DRAW);
 
+}
+
+void Renderer::CreateAlphaClear()
+{
+	float rect[] =
+	{
+		-1.f, -1.f, 0.f,
+		-1.f, 1.f, 0.f,	
+		1.f, 1.f, 0.f,	
+		-1.f, -1.f, 0.f,
+		1.f, 1.f, 0.f,	
+		1.f, -1.f, 0.f
+	};
+
+	glGenBuffers(1, &m_alphaClearVBO);
+	glBindBuffer(GL_ARRAY_BUFFER, m_alphaClearVBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(rect), rect, GL_STATIC_DRAW);
+}
+
+void Renderer::CreateVertexSandbox()
+{
+	m_horiLineVertexCount = 30;
+	int floatCount = m_horiLineVertexCount * 3;
+	int index = 0;
+	float gap = 2.f / ((float)m_horiLineVertexCount - 1.f);
+	float* lineVertices = new float[floatCount];
+	for (int i = 0; i < m_horiLineVertexCount; ++i) {
+		lineVertices[index] = -1.f + (float)i * gap; index++;
+		lineVertices[index] = 0.f; index++;
+		lineVertices[index] = 0.f; index++;
+	}
+
+	glGenBuffers(1, &m_horiLineVBO);
+	glBindBuffer(GL_ARRAY_BUFFER, m_horiLineVBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * floatCount, lineVertices, GL_STATIC_DRAW);
+
+	delete[] lineVertices;
 }

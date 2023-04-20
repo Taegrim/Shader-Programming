@@ -20,27 +20,33 @@ Renderer *g_Renderer = NULL;
 std::chrono::time_point<std::chrono::system_clock> g_last_time;
 constexpr auto frame_time = std::chrono::duration<double>(1.0 / 60.0);
 
+constexpr int g_windowWidth = 1024;
+constexpr int g_windowHeight = 768;
+
+using namespace std::chrono;
+
 void RenderScene(void)
 {
-	using namespace std::chrono;
-
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 
 	auto now = system_clock::now(); 
 	auto exec = duration_cast<std::chrono::duration<double>>(now - g_last_time);
 
 	if (exec >= frame_time) {
+		//g_Renderer->DrawAlphaClear();
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		glClearColor(0.0f, 0.0f, 0.0f, 0.f);
+
 		// Renderer Test
 		//g_Renderer->DrawSolidRect(0, 0, 0, 4, 1, 0, 1, 1);
-		g_Renderer->Update(exec.count());
-		
-		g_last_time = now;
-	}
-	//g_Renderer->DrawParticleEffect();
-	g_Renderer->DrawFragmentSandbox();
+		//g_Renderer->DrawParticleEffect();
+		//g_Renderer->DrawFragmentSandbox();
+		g_Renderer->DrawVertexSandbox();
 
-	glutSwapBuffers();
+		g_Renderer->Update(exec.count());
+
+		g_last_time = now;
+		glutSwapBuffers();
+	}
 }
 
 void Idle(void)
@@ -69,7 +75,7 @@ int main(int argc, char **argv)
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_DEPTH | GLUT_DOUBLE | GLUT_RGBA);
 	glutInitWindowPosition(0, 0);
-	glutInitWindowSize(500, 500);
+	glutInitWindowSize(g_windowWidth, g_windowHeight);
 	glutCreateWindow("Game Software Engineering KPU");
 
 	g_last_time = std::chrono::system_clock::now();
@@ -85,7 +91,7 @@ int main(int argc, char **argv)
 	}
 
 	// Initialize Renderer
-	g_Renderer = new Renderer(500, 500);
+	g_Renderer = new Renderer(g_windowWidth, g_windowHeight);
 	if (!g_Renderer->IsInitialized())
 	{
 		std::cout << "Renderer could not be initialized.. \n";

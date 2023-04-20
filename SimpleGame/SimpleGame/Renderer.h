@@ -21,6 +21,8 @@ public:
 	void Update(float elapsed_time);
 	void DrawParticleEffect();
 	void DrawFragmentSandbox();
+	void DrawAlphaClear();
+	void DrawVertexSandbox();
 
 private:
 	void Initialize(int windowSizeX, int windowSizeY);
@@ -33,6 +35,8 @@ private:
 	void CreateVBO();
 	void CreateParticles(int num);
 	void CreateFragmentSandbox();
+	void CreateAlphaClear();
+	void CreateVertexSandbox();
 
 	bool m_Initialized = false;
 	
@@ -64,8 +68,17 @@ private:
 
 	int m_strideCount;
 
-	// -----------------------
+	// ----------------------- 프래그먼트 다루기
 	GLuint m_fragmentSandboxShader;
 	GLuint m_fragmentSandboxVBO;
+
+	// ----------------------- 잔상 처리 
+	GLuint m_alphaClearShader = 0;
+	GLuint m_alphaClearVBO = 0;
+
+	// ----------------------- VS 애니메이션
+	GLuint m_vertexSandboxShader = 0;
+	GLuint m_horiLineVBO = 0;
+	GLuint m_horiLineVertexCount = 0;
 };
 
