@@ -241,6 +241,8 @@ void Renderer::DrawFragmentSandbox()
 	glUniform1f(uniformLocation, m_time);
 
 	glDrawArrays(GL_TRIANGLES, 0, 6);
+
+	glDisable(GL_BLEND);
 }
 
 void Renderer::DrawAlphaClear()
@@ -258,6 +260,8 @@ void Renderer::DrawAlphaClear()
 	glVertexAttribPointer(posLocation, 3, GL_FLOAT, GL_FALSE, 0, 0);
 
 	glDrawArrays(GL_TRIANGLES, 0, 6);
+
+	glDisable(GL_BLEND);
 }
 
 void Renderer::DrawVertexSandbox()
@@ -285,6 +289,8 @@ void Renderer::DrawVertexSandbox()
 
 	glUniform1f(uniformLocation, m_time + 0.5f);
 	glDrawArrays(GL_LINE_STRIP, 0, m_horiLineVertexCount);
+
+	glDisable(GL_BLEND);
 }
 
 void Renderer::Render()
@@ -324,7 +330,7 @@ void Renderer::Render()
 
 void Renderer::Update(float elapsed_time)
 {
-	m_time += elapsed_time * 4;
+	m_time += elapsed_time * 3;
 }
 
 void Renderer::DrawParticleEffect()

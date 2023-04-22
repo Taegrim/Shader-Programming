@@ -2,6 +2,8 @@
 
 in vec3 a_position;
 
+out float v_alpha;
+
 uniform float u_time;
 
 const float PI = 3.141592;
@@ -15,4 +17,5 @@ void main()
 	newPosition.y = newY;
 
 	gl_Position = newPosition;
+	v_alpha = 1.0 - (value / 2.0);
 }
