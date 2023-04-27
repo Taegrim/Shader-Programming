@@ -23,6 +23,7 @@ public:
 	void DrawFragmentSandbox();
 	void DrawAlphaClear();
 	void DrawVertexSandbox();
+	void DrawTextureSandbox();
 
 private:
 	void Initialize(int windowSizeX, int windowSizeY);
@@ -37,6 +38,9 @@ private:
 	void CreateFragmentSandbox();
 	void CreateAlphaClear();
 	void CreateVertexSandbox();
+	void CreateTextureSandbox();
+	void CreateTextures();
+	GLuint CreatePngTexture(char* filePath, GLuint samplingMethod);
 
 	bool m_Initialized = false;
 	
@@ -80,5 +84,11 @@ private:
 	GLuint m_vertexSandboxShader = 0;
 	GLuint m_horiLineVBO = 0;
 	GLuint m_horiLineVertexCount = 0;
+
+	// ----------------------- 텍스트 처리
+	GLuint m_textureSandboxShader = 0;
+	GLuint m_textureSandboxVBO = 0;
+	GLuint m_checkerBoardTexture = 0;
+	GLuint m_rgbTexture = 0;
 };
 

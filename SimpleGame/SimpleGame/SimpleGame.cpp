@@ -15,6 +15,7 @@ but WITHOUT ANY WARRANTY.
 #include "Dependencies\freeglut.h"
 
 #include "Renderer.h"
+#include "LoadPng.h"
 
 Renderer *g_Renderer = NULL;
 std::chrono::time_point<std::chrono::system_clock> g_last_time;
@@ -32,15 +33,16 @@ void RenderScene(void)
 	auto exec = duration_cast<std::chrono::duration<double>>(now - g_last_time);
 
 	if (exec >= frame_time) {
-		g_Renderer->DrawAlphaClear();
-		//glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		//g_Renderer->DrawAlphaClear();
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		glClearColor(0.0f, 0.0f, 0.0f, 0.f);
 
 		// Renderer Test
 		//g_Renderer->DrawSolidRect(0, 0, 0, 4, 1, 0, 1, 1);
 		//g_Renderer->DrawParticleEffect();
-		g_Renderer->DrawFragmentSandbox();
+		//g_Renderer->DrawFragmentSandbox();
 		//g_Renderer->DrawVertexSandbox();
+		g_Renderer->DrawTextureSandbox();
 
 		g_Renderer->Update(exec.count());
 

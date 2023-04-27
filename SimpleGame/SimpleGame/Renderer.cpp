@@ -1,6 +1,8 @@
 #include "stdafx.h"
 #include "Renderer.h"
+#include <assert.h>
 #include <random>
+#include "LoadPng.h"
 
 constexpr int PARTICLE_NUM = 6000;
 constexpr float PARTICLE_SIZE = 0.01f;
@@ -44,6 +46,8 @@ void Renderer::Initialize(int windowSizeX, int windowSizeY)
 		"./Shaders/AlphaClear.fs");
 	m_vertexSandboxShader = CompileShaders("./Shaders/VertexSandbox.vs",
 		"./Shaders/VertexSandbox.fs");
+	m_textureSandboxShader = CompileShaders("./Shaders/TextureSandbox.vs",
+		"./Shaders/TextureSandbox.fs");
 
 	//Create VBOs
 	//CreateVertexBufferObjects();
@@ -51,6 +55,11 @@ void Renderer::Initialize(int windowSizeX, int windowSizeY)
 	CreateFragmentSandbox();
 	CreateAlphaClear();
 	CreateVertexSandbox();
+	CreateTextureSandbox();
+
+	// LoadTexture
+	CreateTextures();
+	m_rgbTexture = CreatePngTexture("./Resource/±×¸²1.png", GL_NEAREST);
 
 	if (m_SolidRectShader > 0 && m_VBORect > 0)
 	{
@@ -293,6 +302,36 @@ void Renderer::DrawVertexSandbox()
 	glDisable(GL_BLEND);
 }
 
+void Renderer::DrawTextureSandbox()
+{
+	GLuint shader = m_textureSandboxShader;
+	glUseProgram(shader);
+
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+	int posLocation = glGetAttribLocation(shader, "a_position");
+	int texLocation = glGetAttribLocation(shader, "a_texPos");
+	glEnableVertexAttribArray(posLocation);
+	glEnableVertexAttribArray(texLocation);
+
+	glBindBuffer(GL_ARRAY_BUFFER, m_textureSandboxVBO);
+	glVertexAttribPointer(posLocation, 3, GL_FLOAT, GL_FALSE,
+		sizeof(float) * 5, 0);
+	glVertexAttribPointer(texLocation, 2, GL_FLOAT, GL_FALSE,
+		sizeof(float) * 5, (GLvoid*)(sizeof(float) * 3));
+
+	int samplerLocation = glGetUniformLocation(shader, "u_texSampler");
+	glUniform1i(samplerLocation, 0);
+	glActiveTexture(GL_TEXTURE0);
+	//glBindTexture(GL_TEXTURE_2D, m_checkerBoardTexture);
+	glBindTexture(GL_TEXTURE_2D, m_rgbTexture);
+
+	glDrawArrays(GL_TRIANGLES, 0, 6);
+
+	glDisable(GL_BLEND);
+}
+
 void Renderer::Render()
 {
 	int shader_program = m_particleShader;
@@ -330,7 +369,7 @@ void Renderer::Render()
 
 void Renderer::Update(float elapsed_time)
 {
-	m_time += elapsed_time * 3;
+	m_time += elapsed_time;
 }
 
 void Renderer::DrawParticleEffect()
@@ -817,4 +856,68 @@ void Renderer::CreateVertexSandbox()
 	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * floatCount, lineVertices, GL_STATIC_DRAW);
 
 	delete[] lineVertices;
+}
+
+void Renderer::CreateTextureSandbox()
+{
+	float textureRect[]
+	{
+		-0.5f, 0.5f, 0.f,	 0.f, 0.f,
+		-0.5f, -0.5f, 0.f,	 0.f, 1.f,
+		0.5f, 0.5f, 0.f,	 1.f, 0.f,
+		0.5f, 0.5f, 0.f,	 1.f, 0.f,
+		-0.5f, -0.5f, 0.f,	 0.f, 1.f,
+		0.5f, -0.5f, 0.f,	 1.f, 1.f
+	};
+
+	glGenBuffers(1, &m_textureSandboxVBO);
+	glBindBuffer(GL_ARRAY_BUFFER, m_textureSandboxVBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(textureRect), textureRect, GL_STATIC_DRAW);
+}
+
+void Renderer::CreateTextures()
+{
+	GLulong checkerboard[] =
+	{
+	0xFFFFFFFF, 0x00000000, 0xFFFFFFFF, 0x00000000, 0xFFFFFFFF, 0x00000000, 0xFFFFFFFF, 0x00000000,
+	0x00000000, 0xFFFFFFFF, 0x00000000, 0xFFFFFFFF, 0x00000000, 0xFFFFFFFF, 0x00000000, 0xFFFFFFFF,
+	0xFFFFFFFF, 0x00000000, 0xFFFFFFFF, 0x00000000, 0xFFFFFFFF, 0x00000000, 0xFFFFFFFF, 0x00000000,
+	0x00000000, 0xFFFFFFFF, 0x00000000, 0xFFFFFFFF, 0x00000000, 0xFFFFFFFF, 0x00000000, 0xFFFFFFFF,
+	0xFFFFFFFF, 0x00000000, 0xFFFFFFFF, 0x00000000, 0xFFFFFFFF, 0x00000000, 0xFFFFFFFF, 0x00000000,
+	0x00000000, 0xFFFFFFFF, 0x00000000, 0xFFFFFFFF, 0x00000000, 0xFFFFFFFF, 0x00000000, 0xFFFFFFFF,
+	0xFFFFFFFF, 0x00000000, 0xFFFFFFFF, 0x00000000, 0xFFFFFFFF, 0x00000000, 0xFFFFFFFF, 0x00000000,
+	0x00000000, 0xFFFFFFFF, 0x00000000, 0xFFFFFFFF, 0x00000000, 0xFFFFFFFF, 0x00000000, 0xFFFFFFFF
+	};
+
+	glGenTextures(1, &m_checkerBoardTexture);
+	glBindTexture(GL_TEXTURE_2D, m_checkerBoardTexture);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 8, 8, 0, GL_RGBA,
+		GL_UNSIGNED_BYTE, checkerboard);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+}
+
+GLuint Renderer::CreatePngTexture(char* filePath, GLuint samplingMethod)
+{
+	std::vector<unsigned char> image;
+	unsigned width{}, height{};
+	unsigned error = lodepng::decode(image, width, height, filePath);
+	if (error != 0) {
+		std::cout << "image load Error : " << filePath << std::endl;
+		assert(0);
+	}
+
+	GLuint temp{};
+	glGenTextures(1, &temp);
+	glBindTexture(GL_TEXTURE_2D, temp);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA,
+		GL_UNSIGNED_BYTE, &image[0]);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, samplingMethod);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, samplingMethod);
+
+	return temp;
 }

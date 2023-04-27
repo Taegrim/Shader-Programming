@@ -95,7 +95,7 @@ void Lines()
 
 void Flag()
 {
-	float value = 0.5 * (sin(v_texCoord.x * PI * 2 - u_time)) * v_texCoord.x;
+	float value = 0.5 * sin(v_texCoord.x * PI * 2 - u_time) * v_texCoord.x;
 	float sinValue = sin(v_texCoord.x * PI * 2 * 100);
 	float width = 0.005;
 
@@ -121,21 +121,22 @@ void Flag()
 
 void TimeFlag()
 {
-	// 수정 필요
-	FragColor = vec4(0);
-	for(int i = 0; i < 5; ++i){
+	float color = 0;
+	for(int i = 0; i < 10; ++i){
 		float newTime = u_time + i * 0.2;
-		float value = 0.5 * (sin(v_texCoord.x * PI * 2 - u_time)) * v_texCoord.x;
-		float sinValue = sin(v_texCoord.x * PI * 2 * 100);
-		float width = 0.005;
-
+		float value = 0.5 * sin(v_texCoord.x * PI * 2 - newTime * 10) * v_texCoord.x;
+		float sinValue = sin(v_texCoord.x * PI * 2 * 10 - newTime * 500);
+		float width = 0.01 * v_texCoord.x * 5 + 0.001;
+		
+		float newY = 2.0 * (v_texCoord.y - 0.5);
 
 		if( newY < value + width && 
 			newY > value - width)
 		{
-			FragColor = vec4(1 * sinValue);
+			color += 1 * sinValue * (1.0 - v_texCoord.x);
 		}
 	}
+	FragColor = vec4(color);
 }
 
 void main()
