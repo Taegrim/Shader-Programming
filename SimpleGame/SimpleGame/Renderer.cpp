@@ -807,11 +807,11 @@ void Renderer::CreateFragmentSandbox()
 	// position				uv
 	float rect[] =
 	{
-		-1.f, -1.f, 0.f,	 0.f, 1.f,
 		-1.f, 1.f, 0.f,		 0.f, 0.f,
-		1.f, 1.f, 0.f,		 1.f, 0.f,
 		-1.f, -1.f, 0.f,	 0.f, 1.f,
 		1.f, 1.f, 0.f,		 1.f, 0.f,
+		1.f, 1.f, 0.f,		 1.f, 0.f,
+		-1.f, -1.f, 0.f,	 0.f, 1.f,
 		1.f, -1.f, 0.f,		 1.f, 1.f
 	};
 

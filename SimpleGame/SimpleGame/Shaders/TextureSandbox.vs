@@ -7,7 +7,6 @@ out vec2 v_texPos;
 
 void main()
 {
-	vec4 newPosition = vec4(a_position, 1.0f);
-	gl_Position = newPosition;
+	gl_Position = vec4(a_position, 1.0);
 	v_texPos = a_texPos;
 }

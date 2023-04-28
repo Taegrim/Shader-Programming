@@ -46,6 +46,28 @@ void HorzArrange()
 	FragColor = texture(u_texSampler, newPos);
 }
 
+void OtherHorzArrange()
+{
+	vec2 newPos = v_texPos;
+
+	float ratio = 1.0 / 3.0;
+
+	if(v_texPos.x < ratio){
+		newPos.x = newPos.x / ratio;
+		newPos.y = v_texPos.y * ratio + ratio * 0;
+	}
+	else if(v_texPos.x < ratio * 2){
+		newPos.x = (newPos.x - ratio) / ratio;
+		newPos.y = v_texPos.y * ratio + ratio * 1;
+	}
+	else{
+		newPos.x = (newPos.x - ratio * 2) / ratio;
+		newPos.y = v_texPos.y * ratio + ratio * 2;
+	}
+
+	FragColor = texture(u_texSampler, newPos);
+}
+
 void ReverseHorzArrange()
 {
 	vec2 newPos = v_texPos;
@@ -106,9 +128,10 @@ void main()
 {
 	//VertMirror();
 	//UVSwap();
-	HorzArrange();
+	//HorzArrange();
+	//OtherHorzArrange();
 	//ReverseHorzArrange();
 	//Reverse();
-	//Mix1();
+	Mix1();
 	//Mix2();
 }
