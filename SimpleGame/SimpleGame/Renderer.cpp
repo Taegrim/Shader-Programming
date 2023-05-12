@@ -329,6 +329,11 @@ void Renderer::DrawTextureSandbox()
 
 	glDrawArrays(GL_TRIANGLES, 0, 6);
 
+	int repeatLoc = glGetUniformLocation(shader, "u_xyRepeat");
+
+	float repeat = (float)((int)m_time % 4) + 1.0f;
+	glUniform2f(repeatLoc, repeat, 2.0f);
+
 	glDisable(GL_BLEND);
 }
 

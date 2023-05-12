@@ -4,6 +4,7 @@ layout(location=0) out vec4 FragColor;
 
 in vec2 v_texPos;
 uniform sampler2D u_texSampler;
+uniform vec2 u_xyRepeat;
 
 void VertMirror()
 {
@@ -37,6 +38,16 @@ void HorzArrange()
 {
 	vec2 newPos = v_texPos;
 
+	newPos.x = fract(v_texPos.x * 3.0f);
+	newPos.y = floor(3.0f * (1.0f - v_texPos.x)) / 3.0f + (v_texPos.y / 3.0f);
+
+	FragColor = texture(u_texSampler, newPos);
+}
+
+void OtherHorzArrange()
+{
+	vec2 newPos = v_texPos;
+	
 	float ratio = 1.0 / 3.0;
 	newPos.x = mod(v_texPos.x, ratio) / ratio;
 
@@ -46,37 +57,18 @@ void HorzArrange()
 	FragColor = texture(u_texSampler, newPos);
 }
 
-void OtherHorzArrange()
-{
-	vec2 newPos = v_texPos;
-
-	float ratio = 1.0 / 3.0;
-
-	if(v_texPos.x < ratio){
-		newPos.x = newPos.x / ratio;
-		newPos.y = v_texPos.y * ratio + ratio * 0;
-	}
-	else if(v_texPos.x < ratio * 2){
-		newPos.x = (newPos.x - ratio) / ratio;
-		newPos.y = v_texPos.y * ratio + ratio * 1;
-	}
-	else{
-		newPos.x = (newPos.x - ratio * 2) / ratio;
-		newPos.y = v_texPos.y * ratio + ratio * 2;
-	}
-
-	FragColor = texture(u_texSampler, newPos);
-}
-
 void ReverseHorzArrange()
 {
 	vec2 newPos = v_texPos;
 
-	float ratio = 1.0 / 3.0;
-	newPos.x = mod(v_texPos.x, ratio) / ratio;
+	//float ratio = 1.0 / 3.0;
+	//newPos.x = mod(v_texPos.x, ratio) / ratio;
 
-	float t = floor(v_texPos.x / ratio);
-	newPos.y = v_texPos.y * ratio + (1 - ratio * (t + 1));
+	//float t = floor(v_texPos.x / ratio);
+	//newPos.y = v_texPos.y * ratio + (1 - ratio * (t + 1));
+
+	newPos.x = fract(newPos.x * 3.0f);
+	newPos.y = floor(v_texPos.x * 3.0f) / 3.0f + (v_texPos.y / 3.0f);
 
 	FragColor = texture(u_texSampler, newPos);
 }
@@ -92,18 +84,24 @@ void Reverse()
 	FragColor = texture(u_texSampler, newPos);
 }
 
+void OtherReverse()
+{
+	vec2 newPos = v_texPos;
+	
+	float dy = fract(v_texPos.y * 3.0f) / 3.0f;
+	newPos.y = floor(3.0f * (1.0f - v_texPos.y)) / 3.0f + dy;
+	
+	FragColor = texture(u_texSampler, newPos);
+}
+
 void Mix1()
 {
 	vec2 newPos = v_texPos;	
-	
-	if(v_texPos.y < 0.5f){
-		newPos.y *= 2;
-		newPos.x = newPos.x * 2 + 0.5f;
-	}
-	else{
-		newPos.y *= 2;
-		newPos.x *= 2;
-	}
+
+	float dx = v_texPos.x * 2.0f;
+
+	newPos.x = dx + floor((1.0f - v_texPos.y) * 2.0f) * 0.5f;
+	newPos.y = fract(v_texPos.y * 2.0f);
 	
 	FragColor = texture(u_texSampler, newPos);
 }
@@ -124,6 +122,54 @@ void Mix2()
 	FragColor = texture(u_texSampler, newPos);
 }
 
+void OtherMix()
+{
+	vec2 newPos = v_texPos;	
+
+	// repeat 값을 uniform 으로 받아서 처리할 수도 있음
+	float xRepeat = u_xyRepeat.x;
+	float yRepeat = u_xyRepeat.y;
+
+	float dx = v_texPos.x * xRepeat;
+
+	newPos.x = fract(dx + floor((1.0f - v_texPos.y) * yRepeat) * 0.5f);
+	newPos.y = fract(v_texPos.y * yRepeat);
+	
+	FragColor = texture(u_texSampler, newPos);
+}
+
+void OtherMix2()
+{
+	vec2 newPos = v_texPos;	
+
+	float xRepeat = u_xyRepeat.x;
+	float yRepeat = u_xyRepeat.y;
+
+	float dy = v_texPos.y * yRepeat;
+
+	newPos.x = fract(v_texPos.x * xRepeat);
+	newPos.y = fract(dy + floor(v_texPos.x * xRepeat) * 0.5f);
+	
+	FragColor = texture(u_texSampler, newPos);
+}
+
+void AxisChange()
+{
+	vec2 newPos = v_texPos;	
+
+	float y = fract(v_texPos.x + v_texPos.y);
+	float x = fract(v_texPos.x + (1.0f - v_texPos.y));
+
+	float dx = x * 1.0f;
+
+	newPos.x = fract(dx + floor(y * 2.0f) * 0.5f);
+	newPos.y = fract(y * 2.0f);
+
+	FragColor = texture(u_texSampler, newPos);
+
+	//FragColor = vec4(x);
+}
+
 void main()
 {
 	//VertMirror();
@@ -132,6 +178,10 @@ void main()
 	//OtherHorzArrange();
 	//ReverseHorzArrange();
 	//Reverse();
-	Mix1();
+	//OtherReverse();
+	//Mix1();
 	//Mix2();
+	//OtherMix();
+	//OtherMix2();
+	AxisChange();
 }
