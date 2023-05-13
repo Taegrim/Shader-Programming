@@ -61,6 +61,15 @@ void Renderer::Initialize(int windowSizeX, int windowSizeY)
 	CreateTextures();
 	m_rgbTexture = CreatePngTexture("./Resource/그림1.png", GL_NEAREST);
 
+	m_smileTextures[0] = CreatePngTexture("./Resource/texture1.png", GL_NEAREST);
+	m_smileTextures[1] = CreatePngTexture("./Resource/texture2.png", GL_NEAREST);
+	m_smileTextures[2] = CreatePngTexture("./Resource/texture3.png", GL_NEAREST);
+	m_smileTextures[3] = CreatePngTexture("./Resource/texture4.png", GL_NEAREST);
+	m_smileTextures[4] = CreatePngTexture("./Resource/texture5.png", GL_NEAREST);
+	m_smileTextures[5] = CreatePngTexture("./Resource/texture6.png", GL_NEAREST);
+
+	m_smileTexture = CreatePngTexture("./Resource/Smile.png", GL_NEAREST);
+
 	if (m_SolidRectShader > 0 && m_VBORect > 0)
 	{
 		m_Initialized = true;
@@ -333,6 +342,65 @@ void Renderer::DrawTextureSandbox()
 
 	float repeat = (float)((int)m_time % 4) + 1.0f;
 	glUniform2f(repeatLoc, repeat, 2.0f);
+
+	glDisable(GL_BLEND);
+}
+
+void Renderer::DrawSmileTexture()
+{
+	GLuint shader = m_textureSandboxShader;
+	glUseProgram(shader);
+
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+	int posLocation = glGetAttribLocation(shader, "a_position");
+	int texLocation = glGetAttribLocation(shader, "a_texPos");
+	glEnableVertexAttribArray(posLocation);
+	glEnableVertexAttribArray(texLocation);
+
+	glBindBuffer(GL_ARRAY_BUFFER, m_textureSandboxVBO);
+	glVertexAttribPointer(posLocation, 3, GL_FLOAT, GL_FALSE,
+		sizeof(float) * 5, 0);
+	glVertexAttribPointer(texLocation, 2, GL_FLOAT, GL_FALSE,
+		sizeof(float) * 5, (GLvoid*)(sizeof(float) * 3));
+
+	// ------------ 단일 텍스쳐 여러 장 --------------
+	/*int id = (int)m_time % 6;
+	int samplerLocation = glGetUniformLocation(shader, "u_texSampler");
+	glUniform1i(samplerLocation, id);
+	
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, m_smileTextures[0]);
+
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, m_smileTextures[1]);
+
+	glActiveTexture(GL_TEXTURE2);
+	glBindTexture(GL_TEXTURE_2D, m_smileTextures[2]);
+
+	glActiveTexture(GL_TEXTURE3);
+	glBindTexture(GL_TEXTURE_2D, m_smileTextures[3]);
+
+	glActiveTexture(GL_TEXTURE4);
+	glBindTexture(GL_TEXTURE_2D, m_smileTextures[4]);
+
+	glActiveTexture(GL_TEXTURE5);
+	glBindTexture(GL_TEXTURE_2D, m_smileTextures[5]);*/
+	// ------------ 단일 텍스쳐 여러 장 --------------
+
+	// 이어붙인 단일 텍스쳐 사용
+	int samplerLocation = glGetUniformLocation(shader, "u_texSampler");
+	glUniform1i(samplerLocation, 0);
+
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, m_smileTexture);
+
+	int offset = (int)m_time % 6;
+	int offsetLocation = glGetUniformLocation(shader, "u_offset");
+	glUniform1i(offsetLocation, offset);
+
+	glDrawArrays(GL_TRIANGLES, 0, 6);
 
 	glDisable(GL_BLEND);
 }

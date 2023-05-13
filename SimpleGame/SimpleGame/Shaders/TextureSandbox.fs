@@ -5,6 +5,12 @@ layout(location=0) out vec4 FragColor;
 in vec2 v_texPos;
 uniform sampler2D u_texSampler;
 uniform vec2 u_xyRepeat;
+uniform int u_offset;
+
+void Default()
+{
+	FragColor = texture(u_texSampler, v_texPos);
+}
 
 void VertMirror()
 {
@@ -170,8 +176,23 @@ void AxisChange()
 	//FragColor = vec4(x);
 }
 
+void MultiTexture()
+{
+	FragColor = texture(u_texSampler, v_texPos);
+}
+
+void SingleSmileTexture()
+{
+	vec2 newPos = v_texPos;
+
+	newPos.y = v_texPos.y / 6.0f + u_offset / 6.0f;
+
+	FragColor = texture(u_texSampler, newPos);
+}
+
 void main()
 {
+	//Default();
 	//VertMirror();
 	//UVSwap();
 	//HorzArrange();
@@ -183,5 +204,7 @@ void main()
 	//Mix2();
 	//OtherMix();
 	//OtherMix2();
-	AxisChange();
+	//AxisChange();
+	//MultiTexture();
+	SingleSmileTexture();
 }

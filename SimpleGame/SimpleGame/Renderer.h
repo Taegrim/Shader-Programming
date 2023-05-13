@@ -24,6 +24,7 @@ public:
 	void DrawAlphaClear();
 	void DrawVertexSandbox();
 	void DrawTextureSandbox();
+	void DrawSmileTexture();
 
 private:
 	void Initialize(int windowSizeX, int windowSizeY);
@@ -90,5 +91,7 @@ private:
 	GLuint m_textureSandboxVBO = 0;
 	GLuint m_checkerBoardTexture = 0;
 	GLuint m_rgbTexture = 0;
+	GLuint m_smileTextures[6]{ 0, };
+	GLuint m_smileTexture = 0;
 };
 
