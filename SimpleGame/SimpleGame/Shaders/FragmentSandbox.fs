@@ -7,6 +7,7 @@ in vec2 v_texCoord;
 uniform vec2 u_point;
 uniform vec2 u_points[3];
 uniform float u_time;
+uniform sampler2D u_texture;
 
 const float PI = 3.141592;
 
@@ -213,6 +214,32 @@ void SinGraph()
 	FragColor = color;
 }
 
+void RealFlag()
+{
+	float period = (v_texCoord.x + 1.0f) * 1.0f;
+	float amp = 0.75f;
+
+	float xValue = v_texCoord.x * 2.0f * PI * period;
+	float yValue = ((1.0f - v_texCoord.y) - 0.5f) * 2.0f;
+	float sinValue = sin(xValue - 3.0f * u_time) * 0.25f * v_texCoord.x;
+
+	if(sinValue + amp > yValue &&
+		sinValue - amp < yValue)
+	{
+		float vX = v_texCoord.x;
+		float yWidth = 2 * amp;
+		float yDist = yValue - (sinValue - amp);
+		float vY = 1 - (yDist / yWidth);
+
+		FragColor = texture(u_texture, vec2(vX, vY));
+		//FragColor = vec4(vX, vY, 0, 1);
+	}
+	else {
+		FragColor = vec4(0);
+	}
+
+}
+
 void main()
 {
 	//Default();
@@ -224,6 +251,7 @@ void main()
 	//Lines();
 	//Flag();
 	//TimeFrag();
-	OtherTimeFrag();
+	//OtherTimeFrag();
 	//SinGraph();
+	RealFlag();
 }

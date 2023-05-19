@@ -93,5 +93,7 @@ private:
 	GLuint m_rgbTexture = 0;
 	GLuint m_smileTextures[6]{ 0, };
 	GLuint m_smileTexture = 0;
+
+	GLuint m_particleTexture = 0;
 };
 

@@ -69,6 +69,8 @@ void Renderer::Initialize(int windowSizeX, int windowSizeY)
 	m_smileTextures[5] = CreatePngTexture("./Resource/texture6.png", GL_NEAREST);
 
 	m_smileTexture = CreatePngTexture("./Resource/Smile.png", GL_NEAREST);
+	
+	m_particleTexture = CreatePngTexture("./Resource/Orb.png", GL_NEAREST);
 
 	if (m_SolidRectShader > 0 && m_VBORect > 0)
 	{
@@ -257,6 +259,11 @@ void Renderer::DrawFragmentSandbox()
 
 	uniformLocation = glGetUniformLocation(shader, "u_time");
 	glUniform1f(uniformLocation, m_time);
+
+	int texULocation = glGetUniformLocation(shader, "u_texture");
+	glUniform1i(texULocation, 0);
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, m_rgbTexture);
 
 	glDrawArrays(GL_TRIANGLES, 0, 6);
 
@@ -506,6 +513,11 @@ void Renderer::DrawParticleEffect()
 	int uniformLocation = glGetUniformLocation(shader_program, "u_time");
 
 	glUniform1f(uniformLocation, m_time);
+
+	int texLocation = glGetUniformLocation(shader_program, "u_texture");
+	glUniform1i(texLocation, 0);
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, m_particleTexture);
 
 	glDrawArrays(GL_TRIANGLES, 0, m_particleVerticesCount);
 
