@@ -22,7 +22,7 @@ std::chrono::time_point<std::chrono::system_clock> g_last_time;
 constexpr auto frame_time = std::chrono::duration<double>(1.0 / 60.0);
 
 constexpr int g_windowWidth = 1024;
-constexpr int g_windowHeight = 768;
+constexpr int g_windowHeight = 1024;
 
 using namespace std::chrono;
 
@@ -40,11 +40,11 @@ void RenderScene(void)
 		// Renderer Test
 		//g_Renderer->DrawSolidRect(0, 0, 0, 4, 1, 0, 1, 1);
 		//g_Renderer->DrawParticleEffect();
-		//g_Renderer->DrawFragmentSandbox();
+		g_Renderer->DrawFragmentSandbox();
 		//g_Renderer->DrawVertexSandbox();
 		//g_Renderer->DrawTextureSandbox();
 		//g_Renderer->DrawSmileTexture();
-		g_Renderer->DrawGridMesh();
+		//g_Renderer->DrawGridMesh();
 
 		g_Renderer->Update(exec.count());
 

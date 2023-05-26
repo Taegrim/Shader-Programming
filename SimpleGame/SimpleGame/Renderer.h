@@ -5,6 +5,7 @@
 #include <fstream>
 #include <iostream>
 #include <chrono>
+#include <array>
 
 #include "Dependencies\glew.h"
 
@@ -44,6 +45,7 @@ private:
 	void CreateTextures();
 	GLuint CreatePngTexture(char* filePath, GLuint samplingMethod);
 	void CreateGridMesh();
+	void CreateFBO();
 
 	bool m_Initialized = false;
 	
@@ -104,5 +106,11 @@ private:
 	GLuint m_gridMeshShader = 0;
 	GLuint m_gridMeshVertexCount = 0;
 	GLuint m_gridMeshVBO = 0;
+
+
+	// ----------------------  프레임 버퍼 오브젝트
+	std::array<GLuint, 3> m_fboTextures = { 0, };
+	GLuint m_depthRenderBuffer = 0;
+	GLuint m_fbo;
 };
 

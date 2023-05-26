@@ -75,7 +75,12 @@ void Renderer::Initialize(int windowSizeX, int windowSizeY)
 	
 	m_particleTexture = CreatePngTexture("./Resource/Orb.png", GL_NEAREST);
 
+
 	m_spriteTexture = CreatePngTexture("./Resource/explosion.png", GL_NEAREST);
+
+
+	// FBO
+	CreateFBO();
 
 	if (m_SolidRectShader > 0 && m_VBORect > 0)
 	{
@@ -238,6 +243,11 @@ void Renderer::DrawSolidRect(float x, float y, float z, float size, float r, flo
 
 void Renderer::DrawFragmentSandbox()
 {
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);	// 0은 main framebuffer
+											// fbo 로 설정하고 따로 처리하지 않으면
+											// 화면이 아닌 off buffer 에 그려짐
+	glViewport(0, 0, 256, 512);
+
 	GLuint shader = m_fragmentSandboxShader;
 	glUseProgram(shader);
 
@@ -1128,4 +1138,41 @@ void Renderer::CreateGridMesh()
 
 	delete[] vertices;
 	delete[] point;
+}
+
+void Renderer::CreateFBO()
+{
+	for (auto& texture : m_fboTextures) {
+		glGenTextures(1, &texture);
+		glBindTexture(GL_TEXTURE_2D, texture);
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_TRUE);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, 512, 512, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+		// 해상도는 512 * 512
+		// 마지막 인자를 0으로 하여 메모리 공간을 할당하지만 채우진 않음
+	}
+
+	// depth 는 texture / render buffer 중 하나로 사용할 수 있음
+	// render buffer 로 사용하는 것이 상대적으로 빠름
+	glGenRenderbuffers(1, &m_depthRenderBuffer);
+	glBindRenderbuffer(GL_RENDERBUFFER, m_depthRenderBuffer);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, 512, 512);	// DEPTH_COMPONENT 로 사용
+	glBindRenderbuffer(GL_RENDERBUFFER, 0);
+
+	glGenFramebuffers(1, &m_fbo);
+	glBindFramebuffer(GL_FRAMEBUFFER, m_fbo);	// 프레임 버퍼를 가져옴
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
+		m_fboTextures[0], 0);
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
+		GL_RENDERBUFFER, m_depthRenderBuffer);
+
+	GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+	if (status != GL_FRAMEBUFFER_COMPLETE) {
+		std::cout << "FBO Create Fail" << std::endl;
+	}
+
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);		// 끝난 뒤 프레임 버퍼를 돌려줌
 }
