@@ -4,8 +4,8 @@
 #include <random>
 #include "LoadPng.h"
 
-constexpr int PARTICLE_NUM = 6000;
-constexpr float PARTICLE_SIZE = 0.01f;
+constexpr int PARTICLE_NUM = 600;
+constexpr float PARTICLE_SIZE = 0.1f;
 constexpr float PARTICLE_MAX_SPEED = 0.5f;
 
 std::random_device rd;
@@ -48,6 +48,8 @@ void Renderer::Initialize(int windowSizeX, int windowSizeY)
 		"./Shaders/VertexSandbox.fs");
 	m_textureSandboxShader = CompileShaders("./Shaders/TextureSandbox.vs",
 		"./Shaders/TextureSandbox.fs");
+	m_gridMeshShader = CompileShaders("./Shaders/GridMesh.vs",
+		"./Shaders/GridMesh.fs");
 
 	//Create VBOs
 	//CreateVertexBufferObjects();
@@ -56,6 +58,7 @@ void Renderer::Initialize(int windowSizeX, int windowSizeY)
 	CreateAlphaClear();
 	CreateVertexSandbox();
 	CreateTextureSandbox();
+	CreateGridMesh();
 
 	// LoadTexture
 	CreateTextures();
@@ -71,6 +74,8 @@ void Renderer::Initialize(int windowSizeX, int windowSizeY)
 	m_smileTexture = CreatePngTexture("./Resource/Smile.png", GL_NEAREST);
 	
 	m_particleTexture = CreatePngTexture("./Resource/Orb.png", GL_NEAREST);
+
+	m_spriteTexture = CreatePngTexture("./Resource/explosion.png", GL_NEAREST);
 
 	if (m_SolidRectShader > 0 && m_VBORect > 0)
 	{
@@ -265,6 +270,11 @@ void Renderer::DrawFragmentSandbox()
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, m_rgbTexture);
 
+	uniformLocation = glGetUniformLocation(shader, "u_step");
+	glUniform1i(uniformLocation, m_step);
+	 
+	m_step = (int)(m_time * 10.0f) % 48;
+
 	glDrawArrays(GL_TRIANGLES, 0, 6);
 
 	glDisable(GL_BLEND);
@@ -412,6 +422,25 @@ void Renderer::DrawSmileTexture()
 	glDisable(GL_BLEND);
 }
 
+void Renderer::DrawGridMesh()
+{
+	GLuint shader = m_gridMeshShader;
+	glUseProgram(shader);
+
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+	int posLocation = glGetAttribLocation(shader, "a_position");
+	glEnableVertexAttribArray(posLocation);
+
+	glBindBuffer(GL_ARRAY_BUFFER, m_gridMeshVBO);
+	glVertexAttribPointer(posLocation, 3, GL_FLOAT, GL_FALSE, 0, 0);
+
+	glDrawArrays(GL_LINE_STRIP, 0, m_gridMeshVertexCount);
+
+	glDisable(GL_BLEND);
+}
+
 void Renderer::Render()
 {
 	int shader_program = m_particleShader;
@@ -514,10 +543,21 @@ void Renderer::DrawParticleEffect()
 
 	glUniform1f(uniformLocation, m_time);
 
-	int texLocation = glGetUniformLocation(shader_program, "u_texture");
+	/*int texLocation = glGetUniformLocation(shader_program, "u_texture");
 	glUniform1i(texLocation, 0);
 	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, m_particleTexture);
+	glBindTexture(GL_TEXTURE_2D, m_particleTexture);*/
+
+
+	int texULocation = glGetUniformLocation(shader_program, "u_texture");
+	glUniform1i(texULocation, 0);
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, m_spriteTexture);
+
+	uniformLocation = glGetUniformLocation(shader_program, "u_step");
+	glUniform1i(uniformLocation, m_step);
+
+	m_step = (int)(m_time * 10.0f) % 48;
 
 	glDrawArrays(GL_TRIANGLES, 0, m_particleVerticesCount);
 
@@ -1005,4 +1045,87 @@ GLuint Renderer::CreatePngTexture(char* filePath, GLuint samplingMethod)
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, samplingMethod);
 
 	return temp;
+}
+
+void Renderer::CreateGridMesh()
+{
+	float basePosX = -0.5f;
+	float basePosY = -0.5f;
+	float targetPosX = 0.5f;
+	float targetPosY = 0.5f;
+
+	int pointCountX = 24;
+	int pointCountY = 24;
+
+	float width = targetPosX - basePosX;
+	float height = targetPosY - basePosY;
+
+	float* point = new float[pointCountX * pointCountY * 2];
+	float* vertices = new float[(pointCountX - 1) * (pointCountY - 1) * 2 * 3 * 3];
+	m_gridMeshVertexCount = (pointCountX - 1) * (pointCountY - 1) * 2 * 3;
+
+	//Prepare points
+	for (int x = 0; x < pointCountX; x++)
+	{
+		for (int y = 0; y < pointCountY; y++)
+		{
+			point[(y * pointCountX + x) * 2 + 0] = basePosX + width * (x / (float)(pointCountX - 1));
+			point[(y * pointCountX + x) * 2 + 1] = basePosY + height * (y / (float)(pointCountY - 1));
+		}
+	}
+
+	//Make triangles
+	int vertIndex = 0;
+	for (int x = 0; x < pointCountX - 1; x++)
+	{
+		for (int y = 0; y < pointCountY - 1; y++)
+		{
+			//Triangle part 1
+			vertices[vertIndex] = point[(y * pointCountX + x) * 2 + 0];
+			vertIndex++;
+			vertices[vertIndex] = point[(y * pointCountX + x) * 2 + 1];
+			vertIndex++;
+			vertices[vertIndex] = 0.f;
+			vertIndex++;
+			vertices[vertIndex] = point[((y + 1) * pointCountX + (x + 1)) * 2 + 0];
+			vertIndex++;
+			vertices[vertIndex] = point[((y + 1) * pointCountX + (x + 1)) * 2 + 1];
+			vertIndex++;
+			vertices[vertIndex] = 0.f;
+			vertIndex++;
+			vertices[vertIndex] = point[((y + 1) * pointCountX + x) * 2 + 0];
+			vertIndex++;
+			vertices[vertIndex] = point[((y + 1) * pointCountX + x) * 2 + 1];
+			vertIndex++;
+			vertices[vertIndex] = 0.f;
+			vertIndex++;
+
+			//Triangle part 2
+			vertices[vertIndex] = point[(y * pointCountX + x) * 2 + 0];
+			vertIndex++;
+			vertices[vertIndex] = point[(y * pointCountX + x) * 2 + 1];
+			vertIndex++;
+			vertices[vertIndex] = 0.f;
+			vertIndex++;
+			vertices[vertIndex] = point[(y * pointCountX + (x + 1)) * 2 + 0];
+			vertIndex++;
+			vertices[vertIndex] = point[(y * pointCountX + (x + 1)) * 2 + 1];
+			vertIndex++;
+			vertices[vertIndex] = 0.f;
+			vertIndex++;
+			vertices[vertIndex] = point[((y + 1) * pointCountX + (x + 1)) * 2 + 0];
+			vertIndex++;
+			vertices[vertIndex] = point[((y + 1) * pointCountX + (x + 1)) * 2 + 1];
+			vertIndex++;
+			vertices[vertIndex] = 0.f;
+			vertIndex++;
+		}
+	}
+
+	glGenBuffers(1, &m_gridMeshVBO);
+	glBindBuffer(GL_ARRAY_BUFFER, m_gridMeshVBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * (pointCountX - 1) * (pointCountY - 1) * 2 * 3 * 3, vertices, GL_STATIC_DRAW);
+
+	delete[] vertices;
+	delete[] point;
 }

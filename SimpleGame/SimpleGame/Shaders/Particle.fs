@@ -8,6 +8,8 @@ in vec2 v_uv;
 
 uniform sampler2D u_texture;
 
+uniform int u_step;
+
 const float PI = 3.141592;
 
 void Default()
@@ -55,10 +57,23 @@ void Textured()
 	FragColor = value;
 }
 
+void SpriteAnimation()
+{
+	int xStep = u_step % 8;
+	int yStep = u_step / 8;
+
+	float x = v_uv.x / 8.0f + xStep / 8.0f + 0.007f;		// 이미지가 치우쳐 있으므로 0.007를 더해 중앙에 맞춤
+	float y = v_uv.y / 6.0f + yStep / 6.0f;
+	
+	vec2 newPos = vec2(x, y);
+	FragColor = texture(u_texture, newPos);
+}
+
 void main()
 {
 	//FragColor = v_color;
 	//FragColor = vec4(v_uv, 0, 1);
 	//Circle();
-	Textured();
+	//Textured();
+	SpriteAnimation();
 }

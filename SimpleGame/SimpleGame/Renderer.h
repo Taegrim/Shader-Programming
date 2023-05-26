@@ -25,6 +25,7 @@ public:
 	void DrawVertexSandbox();
 	void DrawTextureSandbox();
 	void DrawSmileTexture();
+	void DrawGridMesh();
 
 private:
 	void Initialize(int windowSizeX, int windowSizeY);
@@ -42,6 +43,7 @@ private:
 	void CreateTextureSandbox();
 	void CreateTextures();
 	GLuint CreatePngTexture(char* filePath, GLuint samplingMethod);
+	void CreateGridMesh();
 
 	bool m_Initialized = false;
 	
@@ -95,5 +97,12 @@ private:
 	GLuint m_smileTexture = 0;
 
 	GLuint m_particleTexture = 0;
+	GLuint m_spriteTexture = 0;
+	GLuint m_step = 0;
+
+	// 그리드 메쉬
+	GLuint m_gridMeshShader = 0;
+	GLuint m_gridMeshVertexCount = 0;
+	GLuint m_gridMeshVBO = 0;
 };
 

@@ -9,6 +9,8 @@ uniform vec2 u_points[3];
 uniform float u_time;
 uniform sampler2D u_texture;
 
+uniform int u_step;
+
 const float PI = 3.141592;
 
 void Default()
@@ -240,6 +242,18 @@ void RealFlag()
 
 }
 
+void SpriteAnimation()
+{
+	int xStep = u_step % 8;
+	int yStep = u_step / 8;
+
+	float x = v_texCoord.x / 8.0f + xStep / 8.0f;	// 8*6 sheet
+	float y = v_texCoord.y / 6.0f + yStep / 6.0f;
+	
+	vec2 newPos = vec2(x, y);
+	FragColor = texture(u_texture, newPos);
+}
+
 void main()
 {
 	//Default();
@@ -254,4 +268,5 @@ void main()
 	//OtherTimeFrag();
 	//SinGraph();
 	RealFlag();
+	//SpriteAnimation();
 }
