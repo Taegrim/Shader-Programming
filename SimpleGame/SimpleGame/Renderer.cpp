@@ -446,7 +446,15 @@ void Renderer::DrawGridMesh()
 	glBindBuffer(GL_ARRAY_BUFFER, m_gridMeshVBO);
 	glVertexAttribPointer(posLocation, 3, GL_FLOAT, GL_FALSE, 0, 0);
 
-	glDrawArrays(GL_LINE_STRIP, 0, m_gridMeshVertexCount);
+	glDrawArrays(GL_TRIANGLES, 0, m_gridMeshVertexCount);
+
+	int uniformLocation = glGetUniformLocation(shader, "u_time");
+	glUniform1f(uniformLocation, m_time);
+
+	int samplerLocation = glGetUniformLocation(shader, "u_texSampler");
+	glUniform1i(samplerLocation, 0);
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, m_smileTextures[0]);
 
 	glDisable(GL_BLEND);
 }
