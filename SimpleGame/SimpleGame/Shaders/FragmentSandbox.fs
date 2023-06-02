@@ -1,6 +1,10 @@
 #version 330
 
-layout(location=0) out vec4 FragColor;
+layout(location=0) out vec4 FragColor0;
+layout(location=1) out vec4 FragColor1;
+layout(location=2) out vec4 FragColor2;
+layout(location=3) out vec4 FragColor3;
+layout(location=4) out vec4 FragColor4;
 
 in vec2 v_texCoord;
 
@@ -15,7 +19,7 @@ const float PI = 3.141592;
 
 void Default()
 {
-	FragColor = vec4(v_texCoord, 0.0f, 1.0f);
+	FragColor0 = vec4(v_texCoord, 0.0f, 1.0f);
 }
 
 void SliceHalf()
@@ -25,7 +29,7 @@ void SliceHalf()
 		newCoord = v_texCoord;
 	}
 
-	FragColor = vec4(newCoord, 0.0f, 1.0f);
+	FragColor0 = vec4(newCoord, 0.0f, 1.0f);
 }
 
 void Circle()
@@ -33,10 +37,10 @@ void Circle()
 	float radius = 0.1f;
 
 	if(length(v_texCoord - u_point) < radius){
-		FragColor = vec4(v_texCoord, 0.0f, 1.0f);
+		FragColor1 = vec4(v_texCoord, 0.0f, 1.0f);
 	}
 	else{
-		FragColor = vec4(0);
+		FragColor1 = vec4(0);
 	}
 }
 
@@ -56,7 +60,7 @@ void CircleArray()
 			color = vec4(temp);
 		}
 	}
-	FragColor = color;
+	FragColor0 = color;
 }
 
 void Circles()
@@ -67,7 +71,7 @@ void Circles()
 	float d = length(temp);
 	float value = sin(d * 4 * PI * 10);
 
-	FragColor = vec4(value);
+	FragColor2 = vec4(value);
 }
 
 void Radar()
@@ -87,8 +91,8 @@ void Radar()
 		}
 	}
 	
-	//FragColor = vec4(t);
-	FragColor = vec4(result + 10 * value);
+	//FragColor3 = vec4(t);
+	FragColor3 = vec4(result + 10 * value);
 }
 
 void Radar2()
@@ -117,8 +121,8 @@ void Radar2()
 		// 레이더에서 나오지 않도록 함
 	}
 	
-	//FragColor = vec4(t);
-	FragColor = vec4(result);
+	//FragColor0 = vec4(t);
+	FragColor0 = vec4(result);
 }
 
 void Lines()
@@ -129,7 +133,7 @@ void Lines()
 	float greyHorizontal = sin(newValueX);
 	float greyVertical = sin(newValueY);
 	float newValue = max(greyHorizontal, greyVertical);
-	FragColor = vec4(newValue);
+	FragColor0 = vec4(newValue);
 }
 
 void Flag()
@@ -146,12 +150,12 @@ void Flag()
 	float startY = -0.5;
 	float line = newY;
 	
-	FragColor = vec4(0);
+	FragColor0 = vec4(0);
 	for(int i = 0; i < 5; ++i){
 		if( line + startY < value + width && 
 			line + startY > value - width)
 		{
-			FragColor = vec4(1 * sinValue);
+			FragColor0 = vec4(1 * sinValue);
 		}
 		startY = startY + flagWidth;
 	}
@@ -175,7 +179,7 @@ void TimeFrag()
 			color += 1 * sinValue * (1.0 - v_texCoord.x);
 		}
 	}
-	FragColor = vec4(color);
+	FragColor0 = vec4(color);
 }
 
 void OtherTimeFrag()
@@ -195,7 +199,7 @@ void OtherTimeFrag()
 			color += 1 * sinValue * (1.0 - v_texCoord.x);
 		}
 	}
-	FragColor = vec4(color);
+	FragColor0 = vec4(color);
 }
 
 void SinGraph()
@@ -213,7 +217,7 @@ void SinGraph()
 		color = vec4(1);
 	}
 
-	FragColor = color;
+	FragColor0 = color;
 }
 
 void RealFlag()
@@ -233,11 +237,11 @@ void RealFlag()
 		float yDist = yValue - (sinValue - amp);
 		float vY = 1 - (yDist / yWidth);
 
-		FragColor = texture(u_texture, vec2(vX, vY));
-		//FragColor = vec4(vX, vY, 0, 1);
+		FragColor4 = texture(u_texture, vec2(vX, vY));
+		//FragColor4 = vec4(vX, vY, 0, 1);
 	}
 	else {
-		FragColor = vec4(0);
+		FragColor4 = vec4(0);
 	}
 
 }
@@ -251,16 +255,16 @@ void SpriteAnimation()
 	float y = v_texCoord.y / 6.0f + yStep / 6.0f;
 	
 	vec2 newPos = vec2(x, y);
-	FragColor = texture(u_texture, newPos);
+	FragColor0 = texture(u_texture, newPos);
 }
 
 void main()
 {
-	//Default();
-	//Circle();
-	//Circles();
+	Default();
+	Circle();
+	Circles();
 	//CircleArray();
-	//Radar();
+	Radar();
 	//Radar2();
 	//Lines();
 	//Flag();

@@ -50,6 +50,8 @@ void Renderer::Initialize(int windowSizeX, int windowSizeY)
 		"./Shaders/TextureSandbox.fs");
 	m_gridMeshShader = CompileShaders("./Shaders/GridMesh.vs",
 		"./Shaders/GridMesh.fs");
+	m_drawTextureShader = CompileShaders("./Shaders/DrawTexture.vs",
+		"./Shaders/DrawTexture.fs");
 
 	//Create VBOs
 	//CreateVertexBufferObjects();
@@ -59,6 +61,8 @@ void Renderer::Initialize(int windowSizeX, int windowSizeY)
 	CreateVertexSandbox();
 	CreateTextureSandbox();
 	CreateGridMesh();
+	CreateDrawTextureVBO();
+
 
 	// LoadTexture
 	CreateTextures();
@@ -77,7 +81,6 @@ void Renderer::Initialize(int windowSizeX, int windowSizeY)
 
 
 	m_spriteTexture = CreatePngTexture("./Resource/explosion.png", GL_NEAREST);
-
 
 	// FBO
 	CreateFBO();
@@ -243,10 +246,14 @@ void Renderer::DrawSolidRect(float x, float y, float z, float size, float r, flo
 
 void Renderer::DrawFragmentSandbox()
 {
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);	// 0은 main framebuffer
-											// fbo 로 설정하고 따로 처리하지 않으면
-											// 화면이 아닌 off buffer 에 그려짐
-	glViewport(0, 0, 256, 512);
+	glBindFramebuffer(GL_FRAMEBUFFER, m_fbo);
+	glViewport(0, 0, m_WindowSizeX / 2, m_WindowSizeY / 2);
+
+	GLenum drawBuffers[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2,
+				GL_COLOR_ATTACHMENT3, GL_COLOR_ATTACHMENT4 };
+	glDrawBuffers(5, drawBuffers);
+;
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	GLuint shader = m_fragmentSandboxShader;
 	glUseProgram(shader);
@@ -287,7 +294,11 @@ void Renderer::DrawFragmentSandbox()
 
 	glDrawArrays(GL_TRIANGLES, 0, 6);
 
-	glDisable(GL_BLEND);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	DrawTexture(-0.5,  0.5, 256, 256, m_fboAttachTextures[0]);
+	DrawTexture( 0.5,  0.5, 256, 256, m_fboAttachTextures[1]);
+	DrawTexture(-0.5, -0.5, 256, 256, m_fboAttachTextures[2]);
+	DrawTexture( 0.5, -0.5, 256, 256, m_fboAttachTextures[3]);
 }
 
 void Renderer::DrawAlphaClear()
@@ -457,6 +468,33 @@ void Renderer::DrawGridMesh()
 	glBindTexture(GL_TEXTURE_2D, m_smileTextures[0]);
 
 	glDisable(GL_BLEND);
+}
+
+void Renderer::DrawTexture(float x, float y, float scaleX, float scaleY, GLuint texId)
+{
+	GLuint shader = m_drawTextureShader;
+	glUseProgram(shader);
+
+	GLuint posLocation = glGetAttribLocation(shader, "a_position");
+	glEnableVertexAttribArray(posLocation);
+
+	GLuint texLocation = glGetAttribLocation(shader, "a_texPos");
+	glEnableVertexAttribArray(texLocation);
+
+	glBindBuffer(GL_ARRAY_BUFFER, m_drawTextureVBO);
+	glVertexAttribPointer(posLocation, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 5, 0);
+	glVertexAttribPointer(texLocation, 2, GL_FLOAT, GL_FALSE,
+		sizeof(float) * 5, (GLvoid*)(sizeof(float) * 3));
+
+	GLuint samplerLocation = glGetUniformLocation(shader, "u_texSampler");
+	glUniform1i(samplerLocation, 0);
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, texId);
+
+	GLuint posScaleLocation = glGetUniformLocation(shader, "u_posScale");
+	glUniform4f(posScaleLocation, x, y, scaleX, scaleY);
+
+	glDrawArrays(GL_TRIANGLES, 0, 6);
 }
 
 void Renderer::Render()
@@ -1150,30 +1188,43 @@ void Renderer::CreateGridMesh()
 
 void Renderer::CreateFBO()
 {
-	for (auto& texture : m_fboTextures) {
-		glGenTextures(1, &texture);
-		glBindTexture(GL_TEXTURE_2D, texture);
+	for (int i = 0; i < m_fboTextures.size(); ++i) {
+		glGenTextures(1, &m_fboTextures[i]);
+		glBindTexture(GL_TEXTURE_2D, m_fboTextures[i]);
 		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 		glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_TRUE);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, 512, 512, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, m_WindowSizeX, m_WindowSizeY, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
 		// 해상도는 512 * 512
 		// 마지막 인자를 0으로 하여 메모리 공간을 할당하지만 채우진 않음
+		
+		glGenTextures(1, &m_fboAttachTextures[i]);
+		glBindTexture(GL_TEXTURE_2D, m_fboAttachTextures[i]);
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_TRUE);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, m_WindowSizeX, m_WindowSizeY, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
 	}
 
 	// depth 는 texture / render buffer 중 하나로 사용할 수 있음
 	// render buffer 로 사용하는 것이 상대적으로 빠름
 	glGenRenderbuffers(1, &m_depthRenderBuffer);
 	glBindRenderbuffer(GL_RENDERBUFFER, m_depthRenderBuffer);
-	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, 512, 512);	// DEPTH_COMPONENT 로 사용
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, m_WindowSizeX, m_WindowSizeY);	// DEPTH_COMPONENT 로 사용
 	glBindRenderbuffer(GL_RENDERBUFFER, 0);
 
 	glGenFramebuffers(1, &m_fbo);
 	glBindFramebuffer(GL_FRAMEBUFFER, m_fbo);	// 프레임 버퍼를 가져옴
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
 		m_fboTextures[0], 0);
+	for (auto& fboAttach : m_fboAttachTextures) {
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D,
+			fboAttach, 0);
+	}
 	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
 		GL_RENDERBUFFER, m_depthRenderBuffer);
 
@@ -1183,4 +1234,23 @@ void Renderer::CreateFBO()
 	}
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);		// 끝난 뒤 프레임 버퍼를 돌려줌
+}
+
+void Renderer::CreateDrawTextureVBO()
+{
+	float sizeX = 1.f / m_WindowSizeX;
+	float sizeY = 1.f / m_WindowSizeY;
+
+	float drawTextureRect[]{
+		-sizeX,  sizeY, 0.f,		0.f, 0.f,
+		-sizeX, -sizeY, 0.f,		0.f, 1.f,
+		 sizeX,  sizeY, 0.f,		1.f, 0.f,
+		 sizeX,  sizeY, 0.f,		1.f, 0.f,
+		-sizeX, -sizeY, 0.f,		0.f, 1.f,
+		 sizeX, -sizeY, 0.f,		1.f, 1.f
+	};
+
+	glGenBuffers(1, &m_drawTextureVBO);
+	glBindBuffer(GL_ARRAY_BUFFER, m_drawTextureVBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(drawTextureRect), drawTextureRect, GL_STATIC_DRAW);
 }

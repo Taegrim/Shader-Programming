@@ -27,6 +27,7 @@ public:
 	void DrawTextureSandbox();
 	void DrawSmileTexture();
 	void DrawGridMesh();
+	void DrawTexture(float x, float y, float scaleX, float scaleY, GLuint texId);
 
 private:
 	void Initialize(int windowSizeX, int windowSizeY);
@@ -46,6 +47,7 @@ private:
 	GLuint CreatePngTexture(char* filePath, GLuint samplingMethod);
 	void CreateGridMesh();
 	void CreateFBO();
+	void CreateDrawTextureVBO();
 
 	bool m_Initialized = false;
 	
@@ -109,8 +111,13 @@ private:
 
 
 	// ----------------------  프레임 버퍼 오브젝트
-	std::array<GLuint, 3> m_fboTextures = { 0, };
+	std::array<GLuint, 4> m_fboTextures = { 0, };
+	std::array<GLuint, 4> m_fboAttachTextures {0, };
 	GLuint m_depthRenderBuffer = 0;
 	GLuint m_fbo;
+
+	// Draw Texture
+	GLuint m_drawTextureVBO = 0;
+	GLuint m_drawTextureShader = 0;
 };
 
