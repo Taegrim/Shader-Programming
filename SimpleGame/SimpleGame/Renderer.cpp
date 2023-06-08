@@ -4,8 +4,8 @@
 #include <random>
 #include "LoadPng.h"
 
-constexpr int PARTICLE_NUM = 600;
-constexpr float PARTICLE_SIZE = 0.1f;
+constexpr int PARTICLE_NUM = 6000;
+constexpr float PARTICLE_SIZE = 0.02f;
 constexpr float PARTICLE_MAX_SPEED = 0.5f;
 
 std::random_device rd;
@@ -34,6 +34,8 @@ void Renderer::Initialize(int windowSizeX, int windowSizeY)
 	//Set window size
 	m_WindowSizeX = windowSizeX;
 	m_WindowSizeY = windowSizeY;
+	m_halfSizeX = windowSizeX / 2;
+	m_halfSizeY = windowSizeY / 2;
 
 	//Load shaders
 	m_SolidRectShader = CompileShaders("./Shaders/SolidRect.vs",
@@ -76,7 +78,7 @@ void Renderer::Initialize(int windowSizeX, int windowSizeY)
 	m_smileTextures[5] = CreatePngTexture("./Resource/texture6.png", GL_NEAREST);
 
 	m_smileTexture = CreatePngTexture("./Resource/Smile.png", GL_NEAREST);
-	
+
 	m_particleTexture = CreatePngTexture("./Resource/Orb.png", GL_NEAREST);
 
 
@@ -145,7 +147,7 @@ void Renderer::AddShader(GLuint ShaderProgram, const char* pShaderText, GLenum S
 	glAttachShader(ShaderProgram, ShaderObj);
 }
 
-bool Renderer::ReadFile(char* filename, std::string *target)
+bool Renderer::ReadFile(char* filename, std::string* target)
 {
 	std::ifstream file(filename);
 	if (file.fail())
@@ -246,14 +248,9 @@ void Renderer::DrawSolidRect(float x, float y, float z, float size, float r, flo
 
 void Renderer::DrawFragmentSandbox()
 {
-	glBindFramebuffer(GL_FRAMEBUFFER, m_fbo);
-	glViewport(0, 0, m_WindowSizeX / 2, m_WindowSizeY / 2);
-
-	GLenum drawBuffers[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2,
-				GL_COLOR_ATTACHMENT3, GL_COLOR_ATTACHMENT4 };
-	glDrawBuffers(5, drawBuffers);
-;
+	glBindFramebuffer(GL_FRAMEBUFFER, m_fbos[1]);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glClearColor(1, 1, 1, 1);
 
 	GLuint shader = m_fragmentSandboxShader;
 	glUseProgram(shader);
@@ -289,16 +286,12 @@ void Renderer::DrawFragmentSandbox()
 
 	uniformLocation = glGetUniformLocation(shader, "u_step");
 	glUniform1i(uniformLocation, m_step);
-	 
+
 	m_step = (int)(m_time * 10.0f) % 48;
 
 	glDrawArrays(GL_TRIANGLES, 0, 6);
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-	DrawTexture(-0.5,  0.5, 256, 256, m_fboAttachTextures[0]);
-	DrawTexture( 0.5,  0.5, 256, 256, m_fboAttachTextures[1]);
-	DrawTexture(-0.5, -0.5, 256, 256, m_fboAttachTextures[2]);
-	DrawTexture( 0.5, -0.5, 256, 256, m_fboAttachTextures[3]);
 }
 
 void Renderer::DrawAlphaClear()
@@ -322,9 +315,13 @@ void Renderer::DrawAlphaClear()
 
 void Renderer::DrawVertexSandbox()
 {
+	glBindFramebuffer(GL_FRAMEBUFFER, m_fbos[2]);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glClearColor(1, 1, 1, 1);
+
 	GLuint shader = m_vertexSandboxShader;
 	glUseProgram(shader);
-	
+
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
@@ -347,10 +344,16 @@ void Renderer::DrawVertexSandbox()
 	glDrawArrays(GL_LINE_STRIP, 0, m_horiLineVertexCount);
 
 	glDisable(GL_BLEND);
+
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 void Renderer::DrawTextureSandbox()
 {
+	glBindFramebuffer(GL_FRAMEBUFFER, m_fbos[3]);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glClearColor(1, 1, 1, 1);
+
 	GLuint shader = m_textureSandboxShader;
 	glUseProgram(shader);
 
@@ -382,10 +385,16 @@ void Renderer::DrawTextureSandbox()
 	glUniform2f(repeatLoc, repeat, 2.0f);
 
 	glDisable(GL_BLEND);
+
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 void Renderer::DrawSmileTexture()
 {
+	glBindFramebuffer(GL_FRAMEBUFFER, m_fbos[2]);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glClearColor(1, 1, 1, 1);
+
 	GLuint shader = m_textureSandboxShader;
 	glUseProgram(shader);
 
@@ -407,7 +416,7 @@ void Renderer::DrawSmileTexture()
 	/*int id = (int)m_time % 6;
 	int samplerLocation = glGetUniformLocation(shader, "u_texSampler");
 	glUniform1i(samplerLocation, id);
-	
+
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, m_smileTextures[0]);
 
@@ -441,6 +450,8 @@ void Renderer::DrawSmileTexture()
 	glDrawArrays(GL_TRIANGLES, 0, 6);
 
 	glDisable(GL_BLEND);
+
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 void Renderer::DrawGridMesh()
@@ -497,6 +508,14 @@ void Renderer::DrawTexture(float x, float y, float scaleX, float scaleY, GLuint 
 	glDrawArrays(GL_TRIANGLES, 0, 6);
 }
 
+void Renderer::DrawFboTexture()
+{
+	DrawTexture( -0.5,  0.5, m_halfSizeX, m_halfSizeY, m_fboTextures[0]);
+	DrawTexture( 0.5,   0.5, m_halfSizeX, m_halfSizeY, m_fboTextures[1]);
+	DrawTexture( -0.5, -0.5, m_halfSizeX, m_halfSizeY, m_fboTextures[2]);
+	DrawTexture( 0.5,  -0.5, m_halfSizeX, m_halfSizeY, m_fboTextures[3]);
+}
+
 void Renderer::Render()
 {
 	int shader_program = m_particleShader;
@@ -522,7 +541,7 @@ void Renderer::Render()
 
 
 	int uniformLocation = glGetUniformLocation(m_SolidRectShader, "u_Scale");
-	
+
 	m_scale += 0.01f;
 	if (m_scale >= 1.f)
 		m_scale = 0.f;
@@ -539,6 +558,15 @@ void Renderer::Update(float elapsed_time)
 
 void Renderer::DrawParticleEffect()
 {
+	glBindFramebuffer(GL_FRAMEBUFFER, m_fbos[0]);
+	GLenum drawBuffers[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2,
+				GL_COLOR_ATTACHMENT3, GL_COLOR_ATTACHMENT4 };
+	glDrawBuffers(5, drawBuffers);
+
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glClearColor(1, 1, 1, 1);
+
+
 	int shader_program = m_particleShader;
 	glUseProgram(shader_program);
 
@@ -618,9 +646,11 @@ void Renderer::DrawParticleEffect()
 	glDrawArrays(GL_TRIANGLES, 0, m_particleVerticesCount);
 
 	glDisable(GL_BLEND);
+
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
-void Renderer::GetGLPosition(float x, float y, float *newX, float *newY)
+void Renderer::GetGLPosition(float x, float y, float* newX, float* newY)
 {
 	*newX = x * 2.f / m_WindowSizeX;
 	*newY = y * 2.f / m_WindowSizeY;
@@ -636,7 +666,7 @@ void Renderer::CreateVBO()
 	glBindBuffer(GL_ARRAY_BUFFER, m_testVBO);	// VBO 를 ARRAY_BUFFER 에 Bind 함
 	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW); // CPU의 데이터를 GPU 에 전달
 
-	
+
 	float vertices2[] = { -1.f, -1.f, 0.f,
 					0.f, -1.f, 0.f,
 					0.f, 0.f, 0.f };
@@ -745,7 +775,7 @@ void Renderer::CreateParticles(int num)
 	m_strideCount = (3 + 4 + 3 + 2);
 	int MAX_UNIFORM_COUNT = m_particleVerticesCount * m_strideCount;
 	float* uniforms = new float[MAX_UNIFORM_COUNT];
-	
+
 	float xVelocity{};
 	float yVelocity{};
 
@@ -916,7 +946,7 @@ void Renderer::CreateParticles(int num)
 
 	delete[] times;
 
-	
+
 	float* periods = new float[m_particleVerticesCount];
 
 	float period{};
@@ -957,7 +987,7 @@ void Renderer::CreateParticles(int num)
 	glGenBuffers(1, &m_ampVBO);
 	glBindBuffer(GL_ARRAY_BUFFER, m_ampVBO);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * m_particleVerticesCount, amps, GL_STATIC_DRAW);
-	
+
 	delete[] amps;
 
 
@@ -970,7 +1000,7 @@ void Renderer::CreateParticles(int num)
 		values[i++] = value;
 		values[i++] = value;
 		values[i++] = value;
-			 		  
+
 		values[i++] = value;
 		values[i++] = value;
 		values[i++] = value;
@@ -1007,10 +1037,10 @@ void Renderer::CreateAlphaClear()
 	float rect[] =
 	{
 		-1.f, -1.f, 0.f,
-		-1.f, 1.f, 0.f,	
-		1.f, 1.f, 0.f,	
+		-1.f, 1.f, 0.f,
+		1.f, 1.f, 0.f,
 		-1.f, -1.f, 0.f,
-		1.f, 1.f, 0.f,	
+		1.f, 1.f, 0.f,
 		1.f, -1.f, 0.f
 	};
 
@@ -1192,14 +1222,16 @@ void Renderer::CreateFBO()
 		glGenTextures(1, &m_fboTextures[i]);
 		glBindTexture(GL_TEXTURE_2D, m_fboTextures[i]);
 		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 		glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_TRUE);
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, m_WindowSizeX, m_WindowSizeY, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
 		// 해상도는 512 * 512
 		// 마지막 인자를 0으로 하여 메모리 공간을 할당하지만 채우진 않음
-		
+	}
+
+	for (int i = 0; i < m_fboAttachTextures.size(); ++i) {
 		glGenTextures(1, &m_fboAttachTextures[i]);
 		glBindTexture(GL_TEXTURE_2D, m_fboAttachTextures[i]);
 		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -1217,13 +1249,12 @@ void Renderer::CreateFBO()
 	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, m_WindowSizeX, m_WindowSizeY);	// DEPTH_COMPONENT 로 사용
 	glBindRenderbuffer(GL_RENDERBUFFER, 0);
 
-	glGenFramebuffers(1, &m_fbo);
-	glBindFramebuffer(GL_FRAMEBUFFER, m_fbo);	// 프레임 버퍼를 가져옴
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
-		m_fboTextures[0], 0);
-	for (auto& fboAttach : m_fboAttachTextures) {
-		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D,
-			fboAttach, 0);
+
+	glGenFramebuffers(1, &m_fbos[0]);
+	glBindFramebuffer(GL_FRAMEBUFFER, m_fbos[0]);	// 프레임 버퍼를 가져옴
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_fboTextures[0], 0);
+	for (int i = 0; i < m_fboAttachTextures.size(); ++i) {
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1 + i, GL_TEXTURE_2D, m_fboAttachTextures[i], 0);
 	}
 	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
 		GL_RENDERBUFFER, m_depthRenderBuffer);
@@ -1231,6 +1262,19 @@ void Renderer::CreateFBO()
 	GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
 	if (status != GL_FRAMEBUFFER_COMPLETE) {
 		std::cout << "FBO Create Fail" << std::endl;
+	}
+
+	for (int i = 1; i < m_fbos.size(); ++i) {
+		glGenFramebuffers(1, &m_fbos[i]);
+		glBindFramebuffer(GL_FRAMEBUFFER, m_fbos[i]);	// 프레임 버퍼를 가져옴
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_fboTextures[i], 0);
+		glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
+			GL_RENDERBUFFER, m_depthRenderBuffer);
+
+		GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+		if (status != GL_FRAMEBUFFER_COMPLETE) {
+			std::cout << "FBO Create Fail" << std::endl;
+		}
 	}
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);		// 끝난 뒤 프레임 버퍼를 돌려줌

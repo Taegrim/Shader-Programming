@@ -194,7 +194,7 @@ void main()
 {
 	//Default();
 	//VertMirror();
-	//UVSwap();
+	UVSwap();
 	//HorzArrange();
 	//OtherHorzArrange();
 	//ReverseHorzArrange();
@@ -206,5 +206,5 @@ void main()
 	//OtherMix2();
 	//AxisChange();
 	//MultiTexture();
-	SingleSmileTexture();
+	//SingleSmileTexture();
 }

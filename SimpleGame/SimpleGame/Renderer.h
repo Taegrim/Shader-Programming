@@ -28,6 +28,7 @@ public:
 	void DrawSmileTexture();
 	void DrawGridMesh();
 	void DrawTexture(float x, float y, float scaleX, float scaleY, GLuint texId);
+	void DrawFboTexture();
 
 private:
 	void Initialize(int windowSizeX, int windowSizeY);
@@ -47,12 +48,15 @@ private:
 	GLuint CreatePngTexture(char* filePath, GLuint samplingMethod);
 	void CreateGridMesh();
 	void CreateFBO();
+	void CreateFBOs();
 	void CreateDrawTextureVBO();
 
 	bool m_Initialized = false;
 	
 	unsigned int m_WindowSizeX = 0;
 	unsigned int m_WindowSizeY = 0;
+	unsigned int m_halfSizeX = 0;
+	unsigned int m_halfSizeY = 0;
 
 	GLuint m_VBORect = 0;
 	GLuint m_SolidRectShader = 0;
@@ -111,12 +115,12 @@ private:
 
 
 	// ----------------------  프레임 버퍼 오브젝트
-	std::array<GLuint, 4> m_fboTextures = { 0, };
-	std::array<GLuint, 4> m_fboAttachTextures {0, };
+	std::array<GLuint, 4> m_fboTextures;
+	std::array<GLuint, 4> m_fboAttachTextures;
 	GLuint m_depthRenderBuffer = 0;
-	GLuint m_fbo;
+	std::array<GLuint, 4> m_fbos;
 
-	// Draw Texture
+	//// Draw Texture
 	GLuint m_drawTextureVBO = 0;
 	GLuint m_drawTextureShader = 0;
 };

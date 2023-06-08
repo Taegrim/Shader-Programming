@@ -1,6 +1,10 @@
 #version 330
 
 layout(location=0) out vec4 FragColor;
+layout(location=1) out vec4 FragColor1;
+layout(location=2) out vec4 FragColor2;
+layout(location=3) out vec4 FragColor3;
+layout(location=4) out vec4 FragColor4;
 
 in vec4 v_color;
 //varying vec4 v_color;
@@ -48,7 +52,7 @@ void Circles()
 	float d = length(temp);
 	float value = sin(d * 2 * PI * 4);
 
-	FragColor = vec4(value);
+	FragColor2 = vec4(value);
 }
 
 void Textured()
@@ -74,6 +78,12 @@ void main()
 	//FragColor = v_color;
 	//FragColor = vec4(v_uv, 0, 1);
 	//Circle();
+	//Circles();
 	//Textured();
 	SpriteAnimation();
+
+	FragColor1 = v_color;
+	FragColor2 = vec4(1, 0, 0, 1);
+	FragColor3 = vec4(0, 1, 0, 1);
+	FragColor4 = vec4(0, 0, 1, 1);
 }

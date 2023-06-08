@@ -133,7 +133,7 @@ void Lines()
 	float greyHorizontal = sin(newValueX);
 	float greyVertical = sin(newValueY);
 	float newValue = max(greyHorizontal, greyVertical);
-	FragColor0 = vec4(newValue);
+	FragColor1 = vec4(newValue);
 }
 
 void Flag()
@@ -237,11 +237,11 @@ void RealFlag()
 		float yDist = yValue - (sinValue - amp);
 		float vY = 1 - (yDist / yWidth);
 
-		FragColor4 = texture(u_texture, vec2(vX, vY));
+		FragColor0 = texture(u_texture, vec2(vX, vY));
 		//FragColor4 = vec4(vX, vY, 0, 1);
 	}
 	else {
-		FragColor4 = vec4(0);
+		FragColor0 = vec4(0);
 	}
 
 }
@@ -260,13 +260,13 @@ void SpriteAnimation()
 
 void main()
 {
-	Default();
-	Circle();
-	Circles();
-	//CircleArray();
-	Radar();
-	//Radar2();
+	//Default();
 	//Lines();
+	//Circle();
+	//Circles();
+	//CircleArray();
+	//Radar();
+	//Radar2();
 	//Flag();
 	//TimeFrag();
 	//OtherTimeFrag();
